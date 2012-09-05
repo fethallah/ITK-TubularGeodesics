@@ -13,4 +13,5 @@ rm DartConfiguration.tcl
 rm -fr build;
 rm -fr ITKIOFactoryRegistration;
 rm -fr Testing;
-rm  outputs/*.*;
+rm  outputs/*.swc;
+rm  outputs/*.nrrd;
