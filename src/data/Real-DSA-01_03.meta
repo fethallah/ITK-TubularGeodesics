@@ -1,0 +1,17 @@
+ObjectType = Scene
+NDims = 2
+NObjects = 1
+ObjectType = Landmark
+NDims = 2
+Color = 1 0 0 1
+BinaryData = False
+TransformMatrix = 1 0 0 1
+Offset = 0 0
+CenterOfRotation = 0 0
+ElementSpacing = 1 1
+ElementType = MET_FLOAT
+PointDim = x y red green blue alpha
+NPoints = 2
+Points = 
+234.00 484.00 1 0 0 1
+440.00 282.00 0 0 1 1
