@@ -61,7 +61,7 @@ ADD_TEST(tubularity2D-Synthetic-02 itkMultiScaleOrientedFluxBasedMeasureImageFil
 
 ADD_TEST(geodesic-Synthetic-02 itkTubularMetricToPathFilter outputs/Synthetic-02_scale_space_tubularity.nrrd data/Synthetic-02.png data/Synthetic-02.meta 0 0 outputs/Synthetic-02.swc 1 0.5 1)
 
-ADD_TEST(compare-geodesic-Synthetic-02 PathCompare outputs/Synthetic-02.swc data/Synthetic-02.swc 0.01)
+ADD_TEST(compare-geodesic-Synthetic-02 PathCompare outputs/Synthetic-02.swc data/Synthetic-02.swc 0.02)
 
 ####### Real-DSA-01 #######
 
@@ -69,15 +69,15 @@ ADD_TEST(tubularity2D-Real-DSA-01 itkMultiScaleOrientedFluxBasedMeasureImageFilt
 
 ADD_TEST(geodesic-Real-DSA-01_01 itkTubularMetricToPathFilter outputs/Real-DSA-01_scale_space_tubularity.nrrd data/Real-DSA-01.jpg data/Real-DSA-01_01.meta 0 0 outputs/Real-DSA-01_01.swc 1 0.5 1)
 
-ADD_TEST(compare-geodesic-Real-DSA-01_01 PathCompare outputs/Real-DSA-01_01.swc data/Real-DSA-01_01.swc 0.01)
+ADD_TEST(compare-geodesic-Real-DSA-01_01 PathCompare outputs/Real-DSA-01_01.swc data/Real-DSA-01_01.swc 0.02)
 
 ADD_TEST(geodesic-Real-DSA-01_02 itkTubularMetricToPathFilter outputs/Real-DSA-01_scale_space_tubularity.nrrd data/Real-DSA-01.jpg data/Real-DSA-01_02.meta 0 0 outputs/Real-DSA-01_02.swc 1 0.5 1)
 
-ADD_TEST(compare-geodesic-Real-DSA-01_02 PathCompare outputs/Real-DSA-01_02.swc data/Real-DSA-01_02.swc 0.01)
+ADD_TEST(compare-geodesic-Real-DSA-01_02 PathCompare outputs/Real-DSA-01_02.swc data/Real-DSA-01_02.swc 0.02)
 
 ADD_TEST(geodesic-Real-DSA-01_03 itkTubularMetricToPathFilter outputs/Real-DSA-01_scale_space_tubularity.nrrd data/Real-DSA-01.jpg data/Real-DSA-01_03.meta 0 0 outputs/Real-DSA-01_03.swc 1 0.5 1)
 
-ADD_TEST(compare-geodesic-Real-DSA-01_03 PathCompare outputs/Real-DSA-01_03.swc data/Real-DSA-01_03.swc 0.01)
+ADD_TEST(compare-geodesic-Real-DSA-01_03 PathCompare outputs/Real-DSA-01_03.swc data/Real-DSA-01_03.swc 0.02)
 
 ####### OP_1 #######
 
@@ -85,19 +85,19 @@ ADD_TEST(tubularity3D-OP_1 itkMultiScaleOrientedFluxBasedMeasureImageFilter data
 
 ADD_TEST(geodesic-OP_1_01 itkTubularMetricToPathFilter outputs/OP_1_scale_space_tubularity.nrrd data/OP_1.tif data/OP_1_01.meta 0 0 outputs/OP_1_01.swc 1 0.5 1)
 
-ADD_TEST(compare-geodesic-OP_1_01 PathCompare outputs/OP_1_01.swc data/OP_1_01.swc 0.01)
+ADD_TEST(compare-geodesic-OP_1_01 PathCompare outputs/OP_1_01.swc data/OP_1_01.swc 0.02)
 
 ADD_TEST(geodesic-OP_1_02 itkTubularMetricToPathFilter outputs/OP_1_scale_space_tubularity.nrrd data/OP_1.tif data/OP_1_02.meta 0 0 outputs/OP_1_02.swc 1 0.5 1)
 
-ADD_TEST(compare-geodesic-OP_1_02 PathCompare outputs/OP_1_02.swc data/OP_1_02.swc 0.01)
+ADD_TEST(compare-geodesic-OP_1_02 PathCompare outputs/OP_1_02.swc data/OP_1_02.swc 0.02)
 
 ADD_TEST(geodesic-OP_1_03 itkTubularMetricToPathFilter outputs/OP_1_scale_space_tubularity.nrrd data/OP_1.tif data/OP_1_03.meta 0 0 outputs/OP_1_03.swc 1 0.5 1)
 
-ADD_TEST(compare-geodesic-OP_1_03 PathCompare outputs/OP_1_03.swc data/OP_1_03.swc 0.01)
+ADD_TEST(compare-geodesic-OP_1_03 PathCompare outputs/OP_1_03.swc data/OP_1_03.swc 0.02)
 
 ADD_TEST(geodesic-OP_1_04 itkTubularMetricToPathFilter outputs/OP_1_scale_space_tubularity.nrrd data/OP_1.tif data/OP_1_04.meta 0 0 outputs/OP_1_04.swc 1 0.5 1)
 
-ADD_TEST(compare-geodesic-OP_1_04 PathCompare outputs/OP_1_04.swc data/OP_1_04.swc 0.01)
+ADD_TEST(compare-geodesic-OP_1_04 PathCompare outputs/OP_1_04.swc data/OP_1_04.swc 0.02)
 
 ########################################## testing done ##########################################
 

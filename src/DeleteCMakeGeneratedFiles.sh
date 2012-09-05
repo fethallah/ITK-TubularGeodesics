@@ -9,6 +9,7 @@ find ./ -name \Debug -exec rm -r {} \;
 find ./ -name \Release -exec rm -r {} \;
 find ./ -name \*.build -exec rm -fr {} \;
 find ./ -name \*.xcodeproj -exec rm -r {} \;
+rm DartConfiguration.tcl
 rm -fr build;
 rm -fr ITKIOFactoryRegistration;
 rm -fr Testing;

@@ -22,6 +22,7 @@
 
 // stl includes
 #include <iostream>
+#include<iterator>
 #include <vector>
 #include <string>
 
@@ -123,9 +124,10 @@ int main ( int argc, char* argv[] )
 	if(distance > meanDistanceThrsh)
 	{
 		std::cerr << "mean distance greater than the threshold !!" << std::endl;
+		std::cout << "mean distance point by point is " << distance << std::endl;
 		return EXIT_FAILURE;
 	}
-	std::cout << "mean distance point by point is " << distance << std::endl;
+	
 	
 	return EXIT_SUCCESS;
 }
