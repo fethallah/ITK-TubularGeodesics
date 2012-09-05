@@ -20,6 +20,11 @@
 
 #include <itkImageFileReader.h>
 
+// stl includes
+#include <iostream>
+#include <vector>
+#include <string>
+
 const unsigned int Dimension = 3;
 typedef itk::Point<float, Dimension+1>	TubularPointType;
 typedef std::vector<TubularPointType>		TubularPathType;
