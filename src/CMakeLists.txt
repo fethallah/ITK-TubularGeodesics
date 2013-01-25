@@ -7,8 +7,7 @@ PROJECT(TubularGeodesic)
 INCLUDE(IJMacros.txt)
 
 #The following lines are required to use Dart
-ENABLE_TESTING()
-INCLUDE(Dart)
+INCLUDE(CTest)
 
 #Declare any external dependencies that your project may have here.
 #examples include: ITK, VTK, JPEG, PNG, OpenGL, ZLIB, Perl, Java
