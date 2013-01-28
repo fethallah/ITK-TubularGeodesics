@@ -113,12 +113,7 @@ namespace itk
 		
 		/** Types for Scale image */
 		typedef typename ScaleImageType::PixelType																ScalePixelType;
-		
-		/** External gradient  */
-		typedef TGradientImage																						GradientImageType;
-		typedef typename GradientImageType::Pointer												GradientImagePointer;
-		typedef typename GradientImageType::ConstPointer									GradientImageConstPointer;
-		
+				
 		/** Update image buffer that holds the best objectness response. This is not redundant from
 		 the output image because the latter may not be of float type, which is required for the comparisons 
 		 between responses at different scales. */ 
@@ -128,7 +123,7 @@ namespace itk
 		typedef typename Superclass::DataObjectPointer														DataObjectPointer;
 		
 		typedef OrientedFluxMatrixImageFilter
-		< InputImageType, HessianImageType, GradientImageType >										FFTOrientedFluxType;
+		< InputImageType, HessianImageType >										FFTOrientedFluxType;
 		typedef typename OutputNDImageType::Pointer																OutputNDImagePointer;
 		
 		/** Method for creation through the object factory. */
@@ -206,15 +201,7 @@ namespace itk
 		itkSetMacro(BrightObject,bool);
 		itkGetConstMacro(BrightObject,bool);
 		itkBooleanMacro(BrightObject);
-		
-		/** Set/Get for using external image gradient */
-		void SetUseExternalGradient(bool useExternalGradient);
-		bool GetUseExternalGradient();
-		
-		/** Set/Getexternal image gradient */
-		void SetExternalImageGradient(GradientImagePointer imageGradient);
-		GradientImagePointer GetExternalImageGradient();
-		
+				
 		/** Methods to turn on/off flag to generate an image with hessian-based objectness 
 		 * measure values at each pixel. */
 		itkSetMacro(GenerateNPlus1DHessianMeasureOutput,bool);
@@ -265,9 +252,7 @@ namespace itk
 		bool																							m_GenerateNPlus1DHessianMeasureOutput;
 		
 		bool																							m_BrightObject;
-		
-		bool																							m_UseExternalGradient;
-		GradientImagePointer															m_ExternalImageGradient;
+
 	};
 	
 } // end namespace itk

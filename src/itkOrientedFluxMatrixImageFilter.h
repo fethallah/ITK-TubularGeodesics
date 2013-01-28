@@ -60,11 +60,7 @@ namespace itk
 	typename TOutputImage= Image< SymmetricSecondRankTensor< 
   typename NumericTraits< typename TInputImage::PixelType>::RealType,
   ::itk::GetImageDimension<TInputImage>::ImageDimension >,
-	::itk::GetImageDimension<TInputImage>::ImageDimension >, 
-  typename TGradientImage = Image< CovariantVector<
-	float,
-	::itk::GetImageDimension<TInputImage>::ImageDimension >, 
-	::itk::GetImageDimension<TInputImage>::ImageDimension >	>
+	::itk::GetImageDimension<TInputImage>::ImageDimension > >
 	class ITK_EXPORT OrientedFluxMatrixImageFilter:
 	public ImageToImageFilter<TInputImage,TOutputImage>
 	{
@@ -88,22 +84,14 @@ namespace itk
 		typedef typename InputImageType::RegionType												RegionType;
 		typedef typename InputImageType::SizeType													SizeType;
 		typedef typename InputImageType::PointType												PointType;
-		
-		/** External gradient  */
-		typedef TGradientImage																						GradientImageType;
-		typedef typename GradientImageType::Pointer												GradientImagePointer;
 
 		/** Internal types used by the FFT filters. */
-		typedef typename GradientImageType::PixelType::ValueType					InternalPrecision;
+		typedef float																											InternalPrecision;
 		typedef Image< InternalPrecision, TInputImage::ImageDimension >   InternalImageType;
 		typedef typename InternalImageType::Pointer                       InternalImagePointerType;
 		typedef std::complex< InternalPrecision >                         InternalComplexType;
 		typedef Image< InternalComplexType, TInputImage::ImageDimension > InternalComplexImageType;
 		typedef typename InternalComplexImageType::Pointer                InternalComplexImagePointerType;
-		
-		typedef VectorIndexSelectionCastImageFilter
-		<GradientImageType, InternalImageType >														GradientIndexSelectorFilterType;
-		typedef typename GradientIndexSelectorFilterType::Pointer					GradientIndexSelectorPointer;
 		
 		
 		/** Typedef to describe the boundary condition. */
@@ -152,14 +140,6 @@ namespace itk
 		RealType GetSigma0( );
 		void SetRadius( RealType radius);
 		RealType GetRadius( );
-				
-		/** Set/Get for using external image gradient */
-		void SetUseExternalGradient(bool useExternalGradient);
-		bool GetUseExternalGradient();
-		
-		/** Set/Getexternal image gradient */
-		void SetExternalImageGradient(GradientImagePointer imageGradient);
-		GradientImagePointer GetExternalImageGradient();
 
 #ifdef ITK_USE_CONCEPT_CHECKING
 		/** Begin concept checking */
@@ -167,8 +147,6 @@ namespace itk
 										(Concept::HasNumericTraits<PixelType>));
 		itkConceptMacro(OutputHasPixelTraitsCheck,
 										(Concept::HasPixelTraits<OutputPixelType>));
-		itkConceptMacro(InputGradientHasNumericTraitsCheck,
-									 (Concept::HasNumericTraits< typename TGradientImage::PixelType::ValueType > ) );
 		/** End concept checking */
 #endif		
 		
@@ -231,9 +209,6 @@ namespace itk
 		BoundaryConditionPointerType	m_BoundaryCondition;
 		
 		OutputImageAdaptorPointer			m_ImageAdaptor;
-		
-		bool													m_UseExternalGradient;
-		GradientImagePointer					m_ExternalImageGradient;
 	};
 	
 } // end namespace itk

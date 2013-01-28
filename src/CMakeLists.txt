@@ -55,7 +55,7 @@ TARGET_LINK_LIBRARIES(itkMultiScaleOrientedFluxBasedMeasureImageFilter ${Librari
 
 ########################################## testing ##########################################
 ####### Synthetic-02 #######
-ADD_TEST(tubularity2D-Synthetic-02 itkMultiScaleOrientedFluxBasedMeasureImageFilter data/Synthetic-02.png 0 0 outputs/Synthetic-02_tubularity.nrrd 1 outputs/Synthetic-02_scale_space_tubularity.nrrd 0 0 0 0 0 0 4 8 9 0.5 1 1 100000
+ADD_TEST(tubularity2D-Synthetic-02 itkMultiScaleOrientedFluxBasedMeasureImageFilter data/Synthetic-02.png outputs/Synthetic-02_tubularity.nrrd 1 outputs/Synthetic-02_scale_space_tubularity.nrrd 0 0 0 0 0 0 4 8 9 0.5 1 1 100000
 )
 
 ADD_TEST(geodesic-Synthetic-02 itkTubularMetricToPathFilter outputs/Synthetic-02_scale_space_tubularity.nrrd data/Synthetic-02.png data/Synthetic-02.meta 0 0 outputs/Synthetic-02.swc 1 0.5 1)
@@ -64,7 +64,7 @@ ADD_TEST(compare-geodesic-Synthetic-02 PathCompare outputs/Synthetic-02.swc data
 
 ####### Real-DSA-01 #######
 
-ADD_TEST(tubularity2D-Real-DSA-01 itkMultiScaleOrientedFluxBasedMeasureImageFilter data/Real-DSA-01.jpg 0 0 outputs/Real-DSA-01_tubularity.nrrd 1 outputs/Real-DSA-01_scale_space_tubularity.nrrd 0 0 0 0 0 0 1 9 17 0.5 0 1 100000)
+ADD_TEST(tubularity2D-Real-DSA-01 itkMultiScaleOrientedFluxBasedMeasureImageFilter data/Real-DSA-01.jpg outputs/Real-DSA-01_tubularity.nrrd 1 outputs/Real-DSA-01_scale_space_tubularity.nrrd 0 0 0 0 0 0 1 9 17 0.5 0 1 100000)
 
 ADD_TEST(geodesic-Real-DSA-01_01 itkTubularMetricToPathFilter outputs/Real-DSA-01_scale_space_tubularity.nrrd data/Real-DSA-01.jpg data/Real-DSA-01_01.meta 0 0 outputs/Real-DSA-01_01.swc 1 0.5 1)
 
@@ -80,7 +80,7 @@ ADD_TEST(compare-geodesic-Real-DSA-01_03 PathCompare outputs/Real-DSA-01_03.swc 
 
 ####### OP_1 #######
 
-ADD_TEST(tubularity3D-OP_1 itkMultiScaleOrientedFluxBasedMeasureImageFilter data/OP_1.tif 0 0 outputs/OP_1_tubularity.nrrd 1 outputs/OP_1_scale_space_tubularity.nrrd 0 0 0 0 0 0 1 6 11 0.5 1 1 100000)
+ADD_TEST(tubularity3D-OP_1 itkMultiScaleOrientedFluxBasedMeasureImageFilter data/OP_1.tif outputs/OP_1_tubularity.nrrd 1 outputs/OP_1_scale_space_tubularity.nrrd 0 0 0 0 0 0 1 6 11 0.5 1 1 100000)
 
 ADD_TEST(geodesic-OP_1_01 itkTubularMetricToPathFilter outputs/OP_1_scale_space_tubularity.nrrd data/OP_1.tif data/OP_1_01.meta 0 0 outputs/OP_1_01.swc 1 0.5 1)
 
