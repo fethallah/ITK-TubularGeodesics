@@ -2,7 +2,7 @@
 
 NAME = TubularGeodesicITK
 
-BIBTEXDATABSENAME = InsightJournal
+BIBTEXDATABSENAME = TubularGeodesicITK
 
 
 all: ps pdf dvi

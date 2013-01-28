@@ -8,27 +8,49 @@
 
 \documentclass{InsightArticle}
 
-\usepackage[dvips]{graphicx}
+
+\usepackage{amsfonts}                 %Maths fonts
+\usepackage{amssymb}                  %Maths symbols
+\usepackage{listing}                  %Used for list of listings
+\usepackage{listings}                 %List program code source
+\usepackage{subfigure}                %For subfigures
+\usepackage{color}                    %Allow color
+\usepackage{fancyhdr}                 %Use headers and footers
+\usepackage{graphicx}                 %Graphics
+\usepackage{ccaption}
+\usepackage[dvipdfm=true,
+            bookmarks=true,
+            bookmarksopen=true,
+            bookmarksopenlevel=2,
+            bookmarksnumbered=true,
+            backref=section,
+            colorlinks=true,
+            linkcolor={blue},
+            citecolor={blue},
+            urlcolor={blue}]{hyperref}
+
+%Allow code listings
+\input{listcode}                 
+
+\graphicspath{{./figures/}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 %  hyperref should be the last package to be loaded.
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\usepackage[dvips,
-bookmarks,
-bookmarksopen,
-backref,
-colorlinks,linkcolor={blue},citecolor={blue},urlcolor={blue},
-]{hyperref}
+%\usepackage[dvips,
+%bookmarks,
+%bookmarksopen,
+%backref,
+%colorlinks,linkcolor={blue},citecolor={blue},urlcolor={blue},
+%]{hyperref}
 
 
-%  This is a template for Papers to the Insight Journal. 
-%  It is comparable to a technical report format.
-
-% The title should be descriptive enough for people to be able to find
-% the relevant document. 
-\title{The Importance of Open Access in Scientific Publications}
+%======================================================================%
+%                   F r o n t   M a t t e r                            % 
+%======================================================================%
+\title{Tubular Geodesics using Oriented Flux: \\an ITK implementation}
 
 % 
 % NOTE: This is the last number of the "handle" URL that 
@@ -44,10 +66,8 @@ colorlinks,linkcolor={blue},citecolor={blue},urlcolor={blue},
 
 % At minimum, give your name and an email address.  You can include a
 % snail-mail address if you like.
-\author{Galileo Galilei$^{1}$, Giordano Bruno$^{2}$ and Anthony Leeuwenhoek$^{3}$}
-\authoraddress{$^{1}$Pisa University, Tower drive\\
-               $^{2}$Rome University, Inquisition street\\
-               $^{3}$Netherlands Pragmatic University, Port street}
+\author{Fethallah Benmansour, Engin Turetken and Pascal Fua}
+\authoraddress{CVLab, \'Ecole Polytechnique F\'ederale de Lausanne}
 
 \begin{document}
 
@@ -80,191 +100,166 @@ colorlinks,linkcolor={blue},citecolor={blue},urlcolor={blue},
 \chapter*{Front Matter\label{front}}
 \fi
 
-
+%======================================================================%
+%                       A b s t r a c t                                % 
+%======================================================================%
 % The abstract should be a paragraph or two long, and describe the
 % scope of the document.
 \begin{abstract}
 \noindent
-This document describes a new algorithm implemented using the Insight Toolkit
-ITK \url{www.itk.org}.  The code of the algorithm is written following the 
-ITK CodingStyle as described in the directory
-
-\code{Insight/Documentation/Style.pdf}
-
-This paper is accompanied with the source code, input data, parameters and
-output data that the authors used for validating the algorithm described in
-this paper. This adheres to the fundamental principle that scientific
-publications must facilitate reproducibility of the reported results.
+This document describes an ITK implementation of an interactive method for tubular structure segmentation.
+The basic tools are minimal paths solved using the fast marching algorithm. 
+This allows interactive tools for the physician or biologists by clicking on a small number of points in
+order to obtain a minimal path between two points or a set of paths in the case of
+a tree structure. Our method is based on a variant of the minimal path method that
+models the vessel as a centerline and surface. This is done by adding one dimension for
+the local radius around the centerline. The crucial step of our method is the definition
+of the local metrics to minimize. For that, we propose an implementation of the Oriented Flux to drive the propagation of the fast marching algorithm. 
 
 \end{abstract}
 
 \IJhandlenote{\IJhandlerIDnumber}
-
+%======================================================================%
+%                     M a i n   M a t t e r                            % 
+%======================================================================%
 \tableofcontents
 
-Using filters from the Insight Toolkit, we develop an algorithm for detecting
-and tracking thje movement of solar spots. As it is widely known, celestial
-objects such as the sun are ethereal and perfect, and therefore can not harbor
-artifacts such as spots. However, observations performed with our open source
-telescope have revealed the presence of such spots. The spots seems to continuously change positions on the solar surface. 
+%----------------------------------------------------------------------%
+% Section
+%----------------------------------------------------------------------%
+\section{Introduction}
 
-Automatic detection and tracking of the solar spot movements are of fundamental
-importance for allowing the authors to dedicate more time to perfectioning
-optical instruments and less time to the supervised acquisition of reliable
-data.
+We deal with the problem of finding a complete segmentation of tubular structures in 3D images stacks. The main objective is to extract at the same time the centerline of the tubular structure and its boundary. The proposed method is interactive, requiring a source point and a destination. 
 
-The reader should be warned that direct observation of the sun without proper
-equipment may result in personal injury, loss of vision and burned brains.
+Our method relies on the computation of \textit{geodesic tubes} linking seed points provided by the user, using  a variant of the  minimal path method   applied  in   the   scale  space   domain~\cite{Li07}. 
+As shown in the diagram of figure \ref{fig:diagram}, we first compute a \textit{tubularity} value at each image location $x_i$ and radius value $r_i$, which quantifies the likelihood that there exists a tubular structure of radius $r_i$, at location $x_i$. Given an N-D image, this creates an (N +1)-D scale-space tubularity measure. The proposed tubularity measure is based on the Optimally Oriented Flux \cite{Law08}. Then, using the Fast Marching algorithm~\cite{Sethian99}, the distance map from the provided start point is computed. Finally, the geodesic tube is extracted by back-propagating from the endpoint to the source. By considering only the isotropic case, the method presented here is a simplified version of \cite{Benmansour11}.
 
-\section{Principles of Solar Spot Detection}
-
-Solar spots can be classified as the darkest objects present on an image of the
-solar surface. Algorithms such as watersheds, statistical classification and
-mathematical morphology are suitable for automatically detecting these features
-in images of the solar surface.
-
-
-\section{Why Image Processing Papers must include Source Code, Images and Parameters }
-
-Modern Image Processing is most of the time performed with computers. An
-attempt to replicate the results of an algorithm described in a paper entails
-to reimplement the algorithm into source code. This task is far from trivial
-and consumes months of work. The final result can not be guarranted to be
-equivalent to the actual code that was used for testing the algorithm when the
-paper was written, and therefore it cannot be considered a baseline for
-comparing the algoritm with other algorithms availble to the reader.
-
-Papers to the Insight Journal are written in the spirit of facilitating and
-encouraging readers to perform replication of work. In this sense, the Insight
-Journal is compliant with essential concepts of the scientific method.
-
-Since the code is included with the paper, less time has to be spent in
-describing the code, and more time can be used for describing how to use the
-algorithm in particular types of images.
-
-For questions on the basis of the scientific method the reader is refered to
-\cite{Popper2002,Popper1971}.
-
-
-
-\section{Pointing to other material}
-
-The format of this LaTeX file, allows authors to include code snippets, like
-the following
-
-\small
-\begin{verbatim}
-typedef itk::Image< unsigned char, 3 > ImageType;
-
-ImageType::Pointer image = ImageType::New();
-\end{verbatim}
-\normalsize
-
-and to cite the online documentation of the Insitght Toolkit, for example, the
-link to the doxygen documentation of the ImageToImageFilter
-
-\doxygen{ImageToImageFilter}
-
-LaTeX macros are also available for typesetting code in familiar courier fonts.
-Like the following method of an ITK class.
-
-\code{SetNumberOfIterations()}
-
-
-
-\section{Software Requirements}
-
-You need to have the following software installed:
-
-% The {itemize} environment uses a bullet for each \item.  If you want the 
-% \item's numbered, use the {enumerate} environment instead.
-\begin{itemize}
-  \item  Insight Toolkit 2.4.
-  \item  CMake 2.2
-\end{itemize}
-
-Note that other versions of the Insight Toolkit are also available in the
-testing framework of the Insight Journal. Please refere to the following page
-for details
-
-\url{http://www.insightsoftwareconsortium.org/wiki/index.php/IJ-Testing-Environment}
-
-
-% The preceding sections will have been written in a gentler,
-% introductory style.  You may also wish to include a reference
-% section, documenting all the functions/exceptions/constants.
-% Often, these will be placed in separate files and input like this:
-
-
-
-\appendix
-
-\section{This is an Appendix}
-
-To create an appendix in a Insight HOWTO document, use markup like
-this:
-
-\begin{verbatim}
-\appendix
-
-\section{This is an Appendix}
-
-To create an appendix in a Insight HOWTO document, ....
-
-
-\section{This is another}
-
-Just add another \section{}, but don't say \appendix again.
-\end{verbatim}
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
-%  Example on how to insert a figure
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{figure}
-\center
-\includegraphics[width=0.8\textwidth]{RegistrationComponentsDiagram.eps}
-\itkcaption[Registration Framework Components]{The basic components of the
-registration framework are two input images, a transform, a metric, an
-interpolator and an optimizer.}
-\label{fig:RegistrationComponents}
+%FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+\begin{figure}[!h]
+\begin{center}		
+\includegraphics[width=0.5\linewidth]{Diagram.eps}
+\end{center}
+%Caption
+\caption{Tubular Geodesic computation pipeline.}
+%Caption
+\label{fig:diagram}
 \end{figure}
+%FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+
+Compared to the previous ITK implementation \cite{Mueller2008} for computing centrelines using the fast marching algorithm, ours has the advantage of providing at the same time the centreline and an estimate of the radius. Moreover, using our $4^{th}$ order Runge-Kutta implementation of the gradient descent step, the obtained tubular path are less prone to oscillations. Finally, in\cite{Mueller2008} the author claims that \lq\lq choosing an appropriate speed function is the most difficult part of the entire process\rq\rq. We propose an implementation that provides a well suited speed functions to extract tubular structures from 2D or 3D images.
+
+This implementation have been incorporated in an \texttt{ImageJ/FIJI} GUI \footnote{\url{http://cvlab.epfl.ch/software/delin/index.php}} for semi-automatic tracing of tube-like structures through 3D image stacks, see figure.
+
+%FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+\begin{figure}[!h]
+\begin{center}		
+\includegraphics[width=0.70\linewidth]{DemoTubularGeo1}
+\end{center}
+%Caption
+\vspace{-0.5cm}
+\caption{Illustration of our tracing tool using the ITK implementation of the tubular geodesic extractor}
+%Caption
+\label{fig:diagram}
+\end{figure}
+%FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+
+
+\section{Implementation}
+
+In \cite{Li07}, a variant of the classical, purely spatial, minimal path technique is proposed. By incorporating an extra \textit{non-spatial} dimension into the search space, a point of the 4D path (after adding the extra dimension for the 3D image) consists of three spatial coordinates plus a fourth coordinate which describes the vessel thickness at that corresponding 3D point, see figure \ref{fig:nDVesselAs} as a 2D example. Thus, each 4D point represents a sphere in 3D space, and the vessel is obtained by taking the envelope of these spheres as we move along the 3D curve. A crucial step of this method is to build an adequate tubularity measure that drives the propagation.  As opposed to \cite{Li07}, the proposed tubularity measure is a parameter free.  
+%FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+\begin{figure}[!h]
+\begin{center}		
+\includegraphics[width=0.5\linewidth]{SynthVessels}
+\end{center}
+%Caption
+\caption{A tubular shape is presented as the envelope of a family of spheres or disks with continuously changing center points and radii.}
+%Caption
+\label{fig:nDVesselAs}
+\end{figure}
+%FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+
+We start by describing our implementation for computing geodesic paths. Next, we describe our implementation for computing the tubularity measure that drive the tubular geodesics. %Finally, we compare our methods reconstructions to state of the art methods. 
+
+\subsection{Tubularity Measure}
 
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
-%  Example on how to insert an equation.
-%  Never forget to put an equation in your paper. 
-%  They make them look professional and impress the reviewers.
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
-To support shape-guidance, the generic level set equation
-(Eqn(~\ref{eqn:ShapeInfluenceTerm})) is extended to incorporate a shape guidance
-term:
-
-\begin{equation}
-\label{eqn:ShapeInfluenceTerm}
-\xi \left(\psi^{*}(\mathbf{x}) - \psi(\mathbf{x})\right)
+\subsection{Tubular Geodesic}
+A \textit{tubular geodesic} is a path, linking two points, that globally minimizes an energy functional weighted by a tubularity measure. Without loss of generality and in order to simplify notations we will assume hereinafter that a path $\gamma$ is parametrized along its length (i.e $\|\gamma'\| = 1$). The energy minimized by a geodesic is under the form:
+%++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+\begin{equation}\label{eqn:IsotropicEnergy}
+E(\gamma)=\int_{\gamma} \mathcal{P}\big( \gamma(s) \big)\mathrm{d}s.
 \end{equation}
+%++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+where $\mathcal{P} > 0$ is a tubularity measure that will be described later.
 
 
 
+A geodesic path connecting two 4D tubular points $\mathbf{p}_{1}$ and $\mathbf{p}_{2}$, globally minimizes the above energy (\ref{eqn:IsotropicEnergy}) and is noted $\mathcal{C}_{\mathbf{p}_{1},\mathbf{p}_{2}}$.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+The solution of this minimization problem is obtained through the computation of the \textit{geodesic distance} $\mathcal{U}:\Omega\rightarrow\mathbb{R}^{+}$ associated to~$\mathbf{p}_{1}$ on the domain $\Omega\subset\mathbb{R}^d$ ( $d =  4$ for extracting tubes in 3D images). The geodesic distance is the minimal energy integrated along a path between $\mathbf{p}_{1}$ and any point $\mathbf{x}$ of the domain $\Omega$ :
+%++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+\begin{equation}\label{eqn:minimalactionmap1}
+\forall~\mathbf{x}\in\Omega,~\mathcal{U}(\mathbf{x})=
+\min_{\gamma \in \mathcal{A}_{\mathbf{p}_{1},\mathbf{x}}}
+\Bigg\{ \int_{\gamma} \mathcal{P}\big(\gamma(s) \big) \mathrm{d}s \Bigg\}~,
+\end{equation}
+%++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+where $\mathcal{A}_{\mathbf{p}_{1},\mathbf{x}}$ is the set of paths linking $\mathbf{x}$ to $\mathbf{p}_{1}$.
+The values of $\mathcal{U}$ may be regarded as the arrival times of a front propagating 
+from the source $\mathbf{p}_{1}$ with velocity  $1/\mathcal{P}$.
+$\mathcal{U}$ satisfies the Eikonal equation
+%++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+\begin{equation}\label{eqn:eikonal1}
+\|\nabla \mathcal{U}(\mathbf{x})\| =  \mathcal{P}\text{ for }~\mathbf{x}\in\Omega,\text{ and }   \mathcal{U}(\mathbf{p}_{1}) = 0,
+\end{equation}
+%++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+The map $\mathcal{U}$ has only one local minimum, the source point $\mathbf{p}_{1}$, and its flow lines satisfy the Euler-Lagrange equation of functional (\ref{eqn:IsotropicEnergy}). Thus, the minimal path $\mathcal{C}_{\mathbf{p}_{1},\mathbf{p}_{2}}$ can be retrieved with a simple gradient descent on $\mathcal{U}$ from $\mathbf{p}_{2}$ to $\mathbf{p}_{1}$, solving the following ordinary differential equation with standard numerical methods like Heun's or Runge-Kutta's :
+%++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+\begin{equation}\label{eqn:gradientdescent1}
+\displaystyle\frac{\mathrm{d} \mathcal{C}_{\mathbf{p}_{1},\mathbf{p}_{2}}}{\mathrm{d}s} (s) \propto 
+ -\nabla\mathcal{U}\big(\mathcal{C}_{\mathbf{p}_{1},\mathbf{p}_{2}}(s)\big),\text{ with }\mathcal{C}_{\mathbf{p}_{1},\mathbf{p}_{2}}(0) = \mathbf{p}_{2}.
+\end{equation}
+%++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+The main filter to compute a geodesic path given a tubularity measure is \code{itk::TubularMetricToPathFilter}, which is a subclass of \code{itk::ImageToPathFilter}. \code{itk::TubularMetricToPathFilter} expects one start point, a set of end points, and a tubularity measure that drive the propagation (an image with real non-negative values). A front is launched from the start point using the fast marching filter and the propagation is stopped as soon as the endpoints are reached. To achieve this step, we used the \code{itk::FastMarchingUpwindGradientImageFilter}, so that the estimated gradient directions are used to back propagate from the endpoints to the start point in order to obtain the tubular path. The back propagation could be done using a discrete neighborhood iterator, \code{itk::IterateNeighborhoodCharacteristicDirectionsToPathFilter}, or a fixed step gradient descent optimizer, \code{itk::FixedStepDescentCharacteristicDirectionsToPathFilter}, similar to the ones proposed in \cite{Mueller2008}. In addition to those tow filters, we implemented the $4^{th}$ order Runge–Kutta back propagation method so that the oscillations are much more reduced. 
+
+ (which are parallel to the  of the geodesic distances for the current isotropic case)
+
+
 %
-%  Insert the bibliography using BibTeX
+%For the implementation, first describe quickly \code{PolyLineParametricTubularPath}.
+%Second, recall that equation (\ref{eqn:eikonal1}) is solved using the fast marching algorithm
+%\listcpluspluspsnip
+%\lstinputlisting[float,label=typedef:FM,linerange={89-92}]
+%                 {../src/itkTubularMetricToPathFilter.h}
+%                 
+%\listcpluspluspsnip                 
+%\lstinputlisting[float,label=lst:Slice1,linerange={229-231,240-249,251-267}]
+%                 {../src/itkTubularMetricToPathFilter.hxx}
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%The implementation of the geodesic path extractor consists of one filter 
+%\listcpluspluspsnip
+%\lstinputlisting[float,label=lst:Slice1,linerange={259-261}]
+%                 {../src/itkTubularMetricToPathFilter.cxx}
+%
+%In this project, we implemented a number of auxiliary functions and filters, nevertheless only two filters are expected to be used:
+%\begin{itemize}
+%\item[$\bullet$] \code{itk::MultiScaleOrientedFluxBasedMeasureFFTImageFilter}
+%\item[$\bullet$] \code{itk::TubularMetricToPathFilter}
+%\end{itemize}
+
+
+
+\section{Examples}
+
+\section{Conclusion}
+
 
 \bibliographystyle{plain}
-\bibliography{InsightJournal}
+\bibliography{TubularGeodesicITK}
 
 
 \end{document}
-
