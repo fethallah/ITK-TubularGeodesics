@@ -15,8 +15,8 @@
 //**********************************************************
 
 
-#ifndef __itkOrientedFluxMatrixImageFilter_txx
-#define __itkOrientedFluxMatrixImageFilter_txx
+#ifndef __itkOrientedFluxMatrixImageFilter_hxx
+#define __itkOrientedFluxMatrixImageFilter_hxx
 
 #include "itkOrientedFluxMatrixImageFilter.h"
 #include "itkCastImageFilter.h"

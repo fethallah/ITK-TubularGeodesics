@@ -25,8 +25,8 @@
 //limitations under the License.
 //**********************************************************
 
-#ifndef __itkMultiScaleOrientedFluxBasedMeasureImageFilter_txx
-#define __itkMultiScaleOrientedFluxBasedMeasureImageFilter_txx
+#ifndef __itkMultiScaleOrientedFluxBasedMeasureImageFilter_hxx
+#define __itkMultiScaleOrientedFluxBasedMeasureImageFilter_hxx
 
 #include "itkMultiScaleOrientedFluxBasedMeasureImageFilter.h"
 #include "itkImageRegionIterator.h"
