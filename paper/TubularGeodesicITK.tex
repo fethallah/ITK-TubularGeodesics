@@ -18,6 +18,7 @@
 \usepackage{fancyhdr}                 %Use headers and footers
 \usepackage{graphicx}                 %Graphics
 \usepackage{ccaption}
+\usepackage{dsfont}
 \usepackage[dvipdfm=true,
             bookmarks=true,
             bookmarksopen=true,
@@ -137,7 +138,7 @@ As shown in the diagram of figure \ref{fig:diagram}, we first compute a \textit{
 %FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
 \begin{figure}[!h]
 \begin{center}		
-\includegraphics[width=0.5\linewidth]{Diagram.pdf}
+\includegraphics[width=0.5\linewidth]{Diagram}
 \end{center}
 %Caption
 \caption{Tubular Geodesic computation pipeline.}
@@ -183,8 +184,35 @@ We start by describing our implementation for computing geodesic paths. Next, we
 
 \subsection{Tubularity Measure}
 
+The tubularity measure we propose to use is based on the Optimally Oriented Flux (OOF) \cite{Law08}.
+At the location $\mathbf{x}$ in an image $I$, the oriented flux is the amount of the image gradient projected along the axis $\mathbf{v}$ flowing out from a 3D local sphere\footnote{Centered at point $\mathbf{x}$.} (or a 2D circle) $S_r$. It is measured as follows:
+%++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+\begin{equation}
+f(\mathbf{x}, \mathbf{v};r)
+=\int_{\partial S_r} \left((\nabla (G*I)(\mathbf{x} + \mathbf{h})\cdot \mathbf{v})\mathbf{v}\right)
+\cdot \mathbf{n} \mathrm{d}a,
+\label{eqn:oflux}
+\end{equation}
+%++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+where $G$ is a Gaussian function with a scale factor of $1$ pixel, $r$ is the radius of the sphere (or circle), $\mathbf{h} = r \mathbf{n}$ is the relative position vector along $\partial S_r$, with $\mathbf{n}$ the outward unit normal of $\partial S_r$, and $\mathrm{d}a$ is the infinitesimal area (or length) on $\partial S_r$. Function $f$ is the flux of the smoothed image gradient $\nabla(G*I)$ projected along direction $\mathbf{v}$ toward the sphere $\partial S_r$. To detect vessels having higher intensity than the background region, one would be interested in finding the vessel direction which minimizes $f(\mathbf{x}, \mathbf{v}; r)$, i.e. we are looking for:
+%++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+\begin{equation}
+\arg\min\limits_{\mathbf{v}} f(\mathbf{x}, \mathbf{v};r).
+\label{eqn:min}
+\end{equation}
+%++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Using the divergence theorem, it can be shown that $f(\mathbf{x}, \mathbf{v};r)$ is a quadratic form on $\mathbf{v}$ and its associated matrix can be calculated using a simple convolution,
+%++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+\begin{equation}\label{eqn:ofluxmatrix}
+f(\mathbf{x}, \mathbf{v};r)= \mathbf{v}^{T}\,\,\left\{ I*(\partial_{i,j} G)*\mathds{1}_{S_r} (\mathbf{x})\right\}\,\, \mathbf{v} := \mathbf{v}^{T}\,\,\left\{ I*\mathbf{F}_r (\mathbf{x})\right\}\,\, \mathbf{v},
+\end{equation}
+%++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+where $(\partial_{i,j} G)$ is the Hessian matrix of function $G$ and $\mathds{1}_{S_r}$ is the indicator function of the sphere (or circle) $S_r$. $\mathbf{F}_r$ is called the \textit{oriented flux filter}. 
 
+By differentiating the above equation with respect to $\mathbf{v}$, minimization of function $f$ is in turn acquired as solving a generalized eigenvalue decomposition problem. Solving the aforementioned generalized eigen decomposition problem gives $d$ eigenvalues (where $d = 2 \text{ or }3$ is the dimension of the image), $\lambda_1(\cdot)\leq \dots\leq \lambda_{d}(\cdot)$. To handle the vessels having various radii, a multi-scale approach should be used along with the OOF method. In \cite{Law08}, Law and Chung have proposed to normalize the OOF's eigenvalues by the sphere surface area when the OOF method is incorporated in a multi-scale approach for 3D image volumes. In the 2D case the eigenvalues are normalized by the circle perimeter $2\pi r$. In the 3D case the eigenvalues are normalized by the sphere area $4\pi r^2$.
 
+We propose an ITK implementation of the oriented flux filter using the analytical expression of the OOF~\cite{Law08}. First, the filter \code{itk::OrientedFluxMatrixImageFilter} implements the normalized convolution $I*\mathbf{F}_r/r^{d-1}$, $d$ being the dimension of the image. This filter is templated over the input image type and the output image type for which the default pixel type is \code{itk::SymmetricSecondRankTensor}, since the output is a symmetric matrix. Then, the filter \code{itk::MultiScaleOrientedFluxBasedMeasureImageFilter} implements multi-scale oriented flux measures by combining the eigenvalues of the oriented flux matrix. This filter is very similar to \code{itk::MultiScaleHessianBasedMeasureImageFilter}. We added a few options like the possibility of generating the scale estimate at each voxel location and a scale space tubularity measure that could be used for tracing geodesic tubes.
+The proposed tubularity measures, \code{itk::OrientedFluxCrossSectionTraceMeasure}, sums the $(d-1)$ eigenvalues that correspond to the cross-section of the tubular structure. For a complete example, one can see the provided code: \code{itkMultiScaleOrientedFluxBasedMeasureImageFilter.cxx}.
 
 \subsection{Tubular Geodesic}
 A \textit{tubular geodesic} is a path, linking two points, that globally minimizes an energy functional weighted by a tubularity measure. Without loss of generality and in order to simplify notations we will assume hereinafter that a path $\gamma$ is parametrized along its length (i.e $\|\gamma'\| = 1$). The energy minimized by a geodesic is under the form:
