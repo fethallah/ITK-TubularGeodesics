@@ -205,12 +205,9 @@ int Execute(int argc, char* argv[])
 	typedef float																						OutputPixelType;
 	typedef itk::Image<OutputPixelType,Dimension>						OutputImageType;
 	typedef itk::Image<OutputPixelType,Dimension+1>					OutputScaleSpaceImageType;
-	
-	typedef itk::CovariantVector<OutputPixelType, Dimension> GradientVectorType;
-	typedef itk::Image<GradientVectorType,Dimension>				 GradientImageType;
+
 	
 	typedef itk::ImageFileReader<InputImageType>						FileReaderType;
-	typedef itk::ImageFileReader<GradientImageType>					GradientReaderType;
 	typedef itk::ImageFileWriter<OutputImageType>						FileWriterType;
 	typedef itk::ImageFileWriter<OutputScaleSpaceImageType> ScaleSpaceImageFileWriterType;
 	
@@ -244,7 +241,6 @@ int Execute(int argc, char* argv[])
 	typedef itk::ProcessObject MultiScaleEnhancementBaseFilterType;
 	
 	typedef itk::MultiScaleOrientedFluxBasedMeasureImageFilter< InputImageType, 
-	GradientImageType,
 	OrientedFluxImageType, 
 	ScaleImageType,
 	OrientedFluxCrossSectionTraceObjectnessFilterType, 

@@ -36,18 +36,17 @@
 
 namespace itk
 {
-	
+
 	/**
 	 * Constructor
 	 */
 	template 	<typename TInputImage,
-	typename TGradientImage,
 	typename THessianImage,
 	typename TScaleImage,
 	typename THessianToMeasureFilter,
 	typename TOutputNDImage>
 	MultiScaleOrientedFluxBasedMeasureImageFilter
-	<TInputImage,TGradientImage,THessianImage,TScaleImage,THessianToMeasureFilter,TOutputNDImage>
+	<TInputImage,THessianImage,TScaleImage,THessianToMeasureFilter,TOutputNDImage>
 	::MultiScaleOrientedFluxBasedMeasureImageFilter()
 	{
 		m_SigmaMinimum = 0.2;
@@ -82,14 +81,13 @@ namespace itk
 	 * SetNumberOfSigmaSteps
 	 */	
 	template 	<typename TInputImage,
-	typename TGradientImage,
 	typename THessianImage,
 	typename TScaleImage,
 	typename THessianToMeasureFilter,
 	typename TOutputNDImage>
 	void
 	MultiScaleOrientedFluxBasedMeasureImageFilter
-	<TInputImage,TGradientImage,THessianImage,TScaleImage,THessianToMeasureFilter,TOutputNDImage>
+	<TInputImage,THessianImage,TScaleImage,THessianToMeasureFilter,TOutputNDImage>
 	::SetNumberOfSigmaSteps( unsigned int numOfSigmaSteps )
 	{
 		m_NumberOfSigmaSteps = numOfSigmaSteps;
@@ -118,14 +116,13 @@ namespace itk
 	 * EnlargeOutputRequestedRegion
 	 */	
 	template 	<typename TInputImage,
-	typename TGradientImage,
 	typename THessianImage,
 	typename TScaleImage,
 	typename THessianToMeasureFilter,
 	typename TOutputNDImage>
 	void
 	MultiScaleOrientedFluxBasedMeasureImageFilter
-	<TInputImage,TGradientImage,THessianImage,TScaleImage,THessianToMeasureFilter,TOutputNDImage>
+	<TInputImage,THessianImage,TScaleImage,THessianToMeasureFilter,TOutputNDImage>
 	::EnlargeOutputRequestedRegion (DataObject *output)
 	{
 		// currently this filter can not stream so we must set the outputs
@@ -150,15 +147,14 @@ namespace itk
 	 * MakeOutput
 	 */	
 	template 	<typename TInputImage,
-	typename TGradientImage,
 	typename THessianImage,
 	typename TScaleImage,
 	typename THessianToMeasureFilter,
 	typename TOutputNDImage>
 	typename MultiScaleOrientedFluxBasedMeasureImageFilter 
-  <TInputImage,TGradientImage,THessianImage,TScaleImage,THessianToMeasureFilter,TOutputNDImage>::DataObjectPointer
+  <TInputImage,THessianImage,TScaleImage,THessianToMeasureFilter,TOutputNDImage>::DataObjectPointer
 	MultiScaleOrientedFluxBasedMeasureImageFilter
-	<TInputImage,TGradientImage,THessianImage,TScaleImage,THessianToMeasureFilter,TOutputNDImage>
+	<TInputImage,THessianImage,TScaleImage,THessianToMeasureFilter,TOutputNDImage>
 	::MakeOutput(DataObject::DataObjectPointerArraySizeType idx)
 	{
 		if (idx == 1)
@@ -185,14 +181,13 @@ namespace itk
 	
 	
 	template 	<typename TInputImage,
-	typename TGradientImage,
 	typename THessianImage,
 	typename TScaleImage,
 	typename THessianToMeasureFilter,
 	typename TOutputNDImage>
 	void
 	MultiScaleOrientedFluxBasedMeasureImageFilter
-	<TInputImage,TGradientImage,THessianImage,TScaleImage,THessianToMeasureFilter,TOutputNDImage>
+	<TInputImage,THessianImage,TScaleImage,THessianToMeasureFilter,TOutputNDImage>
 	::CallCopyInputRegionToOutputRegion(OutputNPlus1DRegionType &destRegion,
 																			const InputRegionType &srcRegion)
 	{
@@ -204,14 +199,13 @@ namespace itk
 	 * the (N+1)-D hessian-based image. For that, we compute the scales 
 	 * and create a scale-space image. */
 	template 	<typename TInputImage,
-	typename TGradientImage,
 	typename THessianImage,
 	typename TScaleImage,
 	typename THessianToMeasureFilter,
 	typename TOutputNDImage>
 	void
 	MultiScaleOrientedFluxBasedMeasureImageFilter
-	<TInputImage,TGradientImage,THessianImage,TScaleImage,THessianToMeasureFilter,TOutputNDImage>
+	<TInputImage,THessianImage,TScaleImage,THessianToMeasureFilter,TOutputNDImage>
 	::GenerateOutputInformation()
 	{
 		// Copy information for the first three output images first.
@@ -327,14 +321,13 @@ namespace itk
 	 * AllocateUpdateBuffer
 	 */
 	template 	<typename TInputImage,
-	typename TGradientImage,
 	typename THessianImage,
 	typename TScaleImage,
 	typename THessianToMeasureFilter,
 	typename TOutputNDImage>
 	void
 	MultiScaleOrientedFluxBasedMeasureImageFilter
-	<TInputImage,TGradientImage,THessianImage,TScaleImage,THessianToMeasureFilter,TOutputNDImage>
+	<TInputImage,THessianImage,TScaleImage,THessianToMeasureFilter,TOutputNDImage>
 	::AllocateUpdateBuffer()
 	{
 		/* The update buffer looks just like the output and holds the best response
@@ -357,14 +350,13 @@ namespace itk
 	 * AllocateOutputs
 	 */
 	template 	<typename TInputImage,
-	typename TGradientImage,
 	typename THessianImage,
 	typename TScaleImage,
 	typename THessianToMeasureFilter,
 	typename TOutputNDImage>
 	void
 	MultiScaleOrientedFluxBasedMeasureImageFilter
-	<TInputImage,TGradientImage,THessianImage,TScaleImage,THessianToMeasureFilter,TOutputNDImage>
+	<TInputImage,THessianImage,TScaleImage,THessianToMeasureFilter,TOutputNDImage>
 	::AllocateOutputs()
 	{
 		// Allocate the output
@@ -417,14 +409,13 @@ namespace itk
 	 * GenerateData
 	 */	
 	template 	<typename TInputImage,
-	typename TGradientImage,
 	typename THessianImage,
 	typename TScaleImage,
 	typename THessianToMeasureFilter,
 	typename TOutputNDImage>
 	void
 	MultiScaleOrientedFluxBasedMeasureImageFilter
-	<TInputImage,TGradientImage,THessianImage,TScaleImage,THessianToMeasureFilter,TOutputNDImage>
+	<TInputImage,THessianImage,TScaleImage,THessianToMeasureFilter,TOutputNDImage>
 	::GenerateData()
 	{
 		// Allocate outputs
@@ -491,14 +482,13 @@ namespace itk
 	 * UpdateMaximumResponse
 	 */
 	template 	<typename TInputImage,
-	typename TGradientImage,
 	typename THessianImage,
 	typename TScaleImage,
 	typename THessianToMeasureFilter,
 	typename TOutputNDImage>
 	void
 	MultiScaleOrientedFluxBasedMeasureImageFilter
-	<TInputImage,TGradientImage,THessianImage,TScaleImage,THessianToMeasureFilter,TOutputNDImage>
+	<TInputImage,THessianImage,TScaleImage,THessianToMeasureFilter,TOutputNDImage>
 	::UpdateMaximumResponse(double sigma, unsigned int scaleLevel)
 	{
 		// the meta-data should match between these images, therefore we
@@ -610,14 +600,13 @@ namespace itk
 	}
 	
 	template 	<typename TInputImage,
-	typename TGradientImage,
 	typename THessianImage,
 	typename TScaleImage,
 	typename THessianToMeasureFilter,
 	typename TOutputNDImage>
 	double
 	MultiScaleOrientedFluxBasedMeasureImageFilter
-	<TInputImage,TGradientImage,THessianImage,TScaleImage,THessianToMeasureFilter,TOutputNDImage>
+	<TInputImage,THessianImage,TScaleImage,THessianToMeasureFilter,TOutputNDImage>
 	::ComputeSigmaValue(int scaleLevel)
 	{
 		if (m_NumberOfSigmaSteps < 2)
@@ -630,74 +619,69 @@ namespace itk
 	}
 	
 	template 	<typename TInputImage,
-	typename TGradientImage,
 	typename THessianImage,
 	typename TScaleImage,
 	typename THessianToMeasureFilter,
 	typename TOutputNDImage>
 	typename MultiScaleOrientedFluxBasedMeasureImageFilter
-	<TInputImage,TGradientImage,THessianImage,TScaleImage,THessianToMeasureFilter,TOutputNDImage>::OutputNPlus1DImageType * 
+	<TInputImage,THessianImage,TScaleImage,THessianToMeasureFilter,TOutputNDImage>::OutputNPlus1DImageType * 
 	MultiScaleOrientedFluxBasedMeasureImageFilter
-	<TInputImage,TGradientImage,THessianImage,TScaleImage,THessianToMeasureFilter,TOutputNDImage>
+	<TInputImage,THessianImage,TScaleImage,THessianToMeasureFilter,TOutputNDImage>
 	::GetNPlus1DImageOutput()
 	{
 		return static_cast<OutputNPlus1DImageType*>(this->ProcessObject::GetOutput(3));
 	}
 	
 	template 	<typename TInputImage,
-	typename TGradientImage,
 	typename THessianImage,
 	typename TScaleImage,
 	typename THessianToMeasureFilter,
 	typename TOutputNDImage>
 	typename MultiScaleOrientedFluxBasedMeasureImageFilter
-	<TInputImage,TGradientImage,THessianImage,TScaleImage,THessianToMeasureFilter,TOutputNDImage>::HessianImageType * 
+	<TInputImage,THessianImage,TScaleImage,THessianToMeasureFilter,TOutputNDImage>::HessianImageType * 
 	MultiScaleOrientedFluxBasedMeasureImageFilter
-	<TInputImage,TGradientImage,THessianImage,TScaleImage,THessianToMeasureFilter,TOutputNDImage>
+	<TInputImage,THessianImage,TScaleImage,THessianToMeasureFilter,TOutputNDImage>
 	::GetHessianOutput()
 	{
 		return static_cast<HessianImageType*>(this->ProcessObject::GetOutput(2));
 	}
 	
 	template 	<typename TInputImage,
-	typename TGradientImage,
 	typename THessianImage,
 	typename TScaleImage,
 	typename THessianToMeasureFilter,
 	typename TOutputNDImage>
 	typename MultiScaleOrientedFluxBasedMeasureImageFilter
-	<TInputImage,TGradientImage,THessianImage,TScaleImage,THessianToMeasureFilter,TOutputNDImage>::NPlus1DHessianImageType * 
+	<TInputImage,THessianImage,TScaleImage,THessianToMeasureFilter,TOutputNDImage>::NPlus1DHessianImageType * 
 	MultiScaleOrientedFluxBasedMeasureImageFilter
-	<TInputImage,TGradientImage,THessianImage,TScaleImage,THessianToMeasureFilter,TOutputNDImage>
+	<TInputImage,THessianImage,TScaleImage,THessianToMeasureFilter,TOutputNDImage>
 	::GetNPlus1DHessianOutput()
 	{
 		return static_cast<NPlus1DHessianImageType*>(this->ProcessObject::GetOutput(4));
 	}
 	
 	template 	<typename TInputImage,
-	typename TGradientImage,
 	typename THessianImage,
 	typename TScaleImage,
 	typename THessianToMeasureFilter,
 	typename TOutputNDImage>
 	typename MultiScaleOrientedFluxBasedMeasureImageFilter
-	<TInputImage,TGradientImage,THessianImage,TScaleImage,THessianToMeasureFilter,TOutputNDImage>::ScaleImageType * 
+	<TInputImage,THessianImage,TScaleImage,THessianToMeasureFilter,TOutputNDImage>::ScaleImageType * 
 	MultiScaleOrientedFluxBasedMeasureImageFilter
-	<TInputImage,TGradientImage,THessianImage,TScaleImage,THessianToMeasureFilter,TOutputNDImage>
+	<TInputImage,THessianImage,TScaleImage,THessianToMeasureFilter,TOutputNDImage>
 	::GetScaleOutput()
 	{
 		return static_cast<ScaleImageType*>(this->ProcessObject::GetOutput(1));
 	}
 	
 	template 	<typename TInputImage,
-	typename TGradientImage,
 	typename THessianImage,
 	typename TScaleImage,
 	typename THessianToMeasureFilter,
 	typename TOutputNDImage>
 	void
 	MultiScaleOrientedFluxBasedMeasureImageFilter
-	<TInputImage,TGradientImage,THessianImage,TScaleImage,THessianToMeasureFilter,TOutputNDImage>
+	<TInputImage,THessianImage,TScaleImage,THessianToMeasureFilter,TOutputNDImage>
 	::PrintSelf(std::ostream& os, Indent indent) const
 	{
 		Superclass::PrintSelf(os, indent);

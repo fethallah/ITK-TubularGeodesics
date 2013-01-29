@@ -64,7 +64,6 @@ namespace itk
 	 *
 	 */
 	template <typename TInputImage,
-	typename TGradientImage,
 	typename THessianImage, 
 	typename TScaleImage,
 	typename TOrientedFluxToMeasureFilter,
@@ -85,7 +84,7 @@ namespace itk
 		typedef TInputImage																												InputImageType;
 		typedef TOutputNDImage																										OutputNDImageType;
 		typedef THessianImage																											HessianImageType;
-		typedef OrientedFluxMatrixImageFilter<InputImageType>									OrientedFluxFilterType;
+		typedef OrientedFluxMatrixImageFilter<InputImageType>											OrientedFluxFilterType;
 		typedef TScaleImage																												ScaleImageType;
 		typedef TOrientedFluxToMeasureFilter																			OrientedFluxToMeasureFilterType;
 		
@@ -123,7 +122,7 @@ namespace itk
 		typedef typename Superclass::DataObjectPointer														DataObjectPointer;
 		
 		typedef OrientedFluxMatrixImageFilter
-		< InputImageType, HessianImageType >										FFTOrientedFluxType;
+		< InputImageType, HessianImageType >																			FFTOrientedFluxType;
 		typedef typename OutputNDImageType::Pointer																OutputNDImagePointer;
 		
 		/** Method for creation through the object factory. */
