@@ -51,7 +51,7 @@
 %======================================================================%
 %                   F r o n t   M a t t e r                            % 
 %======================================================================%
-\title{Tubular Geodesics using Oriented Flux: \\an ITK implementation}
+\title{Tubular Geodesics using Oriented Flux: \\An ITK Implementation}
 
 % 
 % NOTE: This is the last number of the "handle" URL that 
@@ -109,13 +109,13 @@
 \begin{abstract}
 \noindent
 This document describes an ITK implementation of an interactive method for tubular structure segmentation.
-The basic tools are minimal paths solved using the fast marching algorithm. 
-This allows interactive tools for the physician or biologists by clicking on a small number of points in
-order to obtain a minimal path between two points or a set of paths in the case of
-a tree structure. Our method is based on a variant of the minimal path method that
-models the vessel as a centerline and surface. This is done by adding one dimension for
-the local radius around the centerline. The crucial step of our method is the definition
-of the local metrics to minimize. For that, we propose an implementation of the Oriented Flux to drive the propagation of the fast marching algorithm. 
+The basic tools provided in this framework are an oriented flux-based tubularity measure and a geodesic path 
+tracer that uses the fast marching algorithm. The framework requires a minimal amount of user interaction to trace
+tubular tree-like structures such as vessels and neurites in 2D images and 3D stacks.
+
+Our method is a minimal path technique that models the vessel as a sequence of centerline points and radius values. 
+The crucial step of our method is the definition of the local tubularity metric to minimize. For that, we propose an 
+implementation of the oriented flux measure to drive the propagation of the fast marching algorithm. 
 
 \end{abstract}
 
@@ -130,10 +130,10 @@ of the local metrics to minimize. For that, we propose an implementation of the 
 %----------------------------------------------------------------------%
 \section{Introduction}
 
-We deal with the problem of finding a complete segmentation of tubular structures in 3D images stacks. The main objective is to extract at the same time the centerline of the tubular structure and its boundary. The proposed method is interactive, requiring a source point and a destination. 
+We deal with the problem of finding a complete segmentation of tubular structures in 2D images and 3D stacks. The main objective is to extract the centerline coordinates of the tubular structures and their thickness. The proposed method is interactive, requiring only a start and an end point to trace a \textit{geodesic tube} between them.
 
-Our method relies on the computation of \textit{geodesic tubes} linking seed points provided by the user, using  a variant of the  minimal path method   applied  in   the   scale  space   domain~\cite{Li07}. 
-As shown in the diagram of figure \ref{fig:diagram}, we first compute a \textit{tubularity} value at each image location $x_i$ and radius value $r_i$, which quantifies the likelihood that there exists a tubular structure of radius $r_i$, at location $x_i$. Given an N-D image, this creates an (N +1)-D scale-space tubularity measure. The proposed tubularity measure is based on the Optimally Oriented Flux \cite{Law08}. Then, using the Fast Marching algorithm~\cite{Sethian99}, the distance map from the provided start point is computed. Finally, the geodesic tube is extracted by back-propagating from the endpoint to the source. By considering only the isotropic case, the method presented here is a simplified version of \cite{Benmansour11}.
+We use  a variant of the  minimal path method   applied  in   the   scale-space   domain~\cite{Li07}. 
+As shown in the diagram of figure \ref{fig:diagram}, we first compute a \textit{tubularity} value at each image location $x_i$ and radius value $r_i$, which quantifies the likelihood that there exists a tubular structure of radius $r_i$, at location $x_i$. Given an N-D image, this creates an (N+1)-D scale-space tubularity measure, which, in this work, is taken as the sum of the two dominant eigenvalues of the Optimally Oriented Flux matrix~\cite{Law08}. This step is followed by computation of a distance map from a given start point using the Fast Marching algorithm~\cite{Sethian99}. Finally, the geodesic tube is extracted by back-propagating from an end point to the start. The method presented here is a simplified version of \cite{Benmansour11} since we consider only isotropic tubularity measures.
 
 %FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
 \begin{figure}[!h]
@@ -141,15 +141,15 @@ As shown in the diagram of figure \ref{fig:diagram}, we first compute a \textit{
 \includegraphics[width=0.5\linewidth]{Diagram}
 \end{center}
 %Caption
-\caption{Tubular Geodesic computation pipeline.}
+\caption{The tubular geodesic computation pipeline.}
 %Caption
 \label{fig:diagram}
 \end{figure}
 %FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
 
-Compared to the previous ITK implementation \cite{Mueller2008} for computing centrelines using the fast marching algorithm, ours has the advantage of providing at the same time the centreline and an estimate of the radius. Moreover, using our $4^{th}$ order Runge-Kutta implementation of the gradient descent step, the obtained tubular path are less prone to oscillations. Finally, in\cite{Mueller2008} the author claims that \lq\lq choosing an appropriate speed function is the most difficult part of the entire process\rq\rq. We propose an implementation that provides a well suited speed functions to extract tubular structures from 2D or 3D images.
+Compared to the ITK implementation proposed in~\cite{Mueller2008}, which provides only centreline locations, our method provides, at the same time, radius estimates. Moreover, our back-propagation step uses the $4^{th}$ order Runge-Kutta optimizer, and hence, yields less oscillations. Finally, in~\cite{Mueller2008} the author claims that \lq\lq choosing an appropriate speed function is the most difficult part of the entire process\rq\rq. We propose an implementation that provides a well suited speed function to extract tubular structures.
 
-This implementation have been incorporated in an \texttt{ImageJ/FIJI} GUI \footnote{\url{http://cvlab.epfl.ch/software/delin/index.php}} for semi-automatic tracing of tube-like structures through 3D image stacks, see figure.
+This implementation have been incorporated in the \texttt{ImageJ/FIJI} plugin \textit{Simple Neurite Tracer} \footnote{\url{http://cvlab.epfl.ch/software/delin/index.php}} (SNT) for semi-automatic tracing of tubular or ridge-like structures as illustrated in figure~\ref{fig:snt}.
 
 %FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
 \begin{figure}[!h]
@@ -158,34 +158,37 @@ This implementation have been incorporated in an \texttt{ImageJ/FIJI} GUI \footn
 \end{center}
 %Caption
 \vspace{-0.5cm}
-\caption{Illustration of our tracing tool using the ITK implementation of the tubular geodesic extractor}
+\caption{Our extended SNT tracer uses the ITK implementation of the tubular geodesic extractor.}
 %Caption
-\label{fig:diagram}
+\label{fig:snt}
 \end{figure}
 %FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
 
 
 \section{Implementation}
 
-In \cite{Li07}, a variant of the classical, purely spatial, minimal path technique is proposed. By incorporating an extra \textit{non-spatial} dimension into the search space, a point of the 4D path (after adding the extra dimension for the 3D image) consists of three spatial coordinates plus a fourth coordinate which describes the vessel thickness at that corresponding 3D point, see figure \ref{fig:nDVesselAs} as a 2D example. Thus, each 4D point represents a sphere in 3D space, and the vessel is obtained by taking the envelope of these spheres as we move along the 3D curve. A crucial step of this method is to build an adequate tubularity measure that drives the propagation.  As opposed to \cite{Li07}, the proposed tubularity measure is a parameter free.  
+In \cite{Li07}, a variant of the classical, purely spatial, minimal path technique is proposed. By incorporating an extra \textit{non-spatial} dimension into the search space, the method models a tubular path in a 3D image as a sequence of 4D points (three spatial dimensions for coordinates and a scale dimension that quantifies the vessel thickness at that corresponding 3D point). Thus, each 4D point represents a sphere in 3D space, and the vessel is obtained by taking the envelope of these spheres as we move along the 3D curve (see figure~\ref{fig:nDVesselAs} for a 2D example). 
+
+A crucial step of this method is building an informative tubularity measure that drives the propagation. As opposed to \cite{Li07} that requires a few parameters to tune, the oriented flux-based tubularity measure is parameter free.
 %FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
 \begin{figure}[!h]
 \begin{center}		
 \includegraphics[width=0.5\linewidth]{SynthVessels}
 \end{center}
 %Caption
-\caption{A tubular shape is presented as the envelope of a family of spheres or disks with continuously changing center points and radii.}
+\caption{A tubular shape is represented as an envelope of a family of spheres with continuously changing center points and radii.}
 %Caption
 \label{fig:nDVesselAs}
 \end{figure}
 %FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
 
-We start by describing our implementation for computing geodesic paths. Next, we describe our implementation for computing the tubularity measure that drive the tubular geodesics. %Finally, we compare our methods reconstructions to state of the art methods. 
+In the following, we describe our implementation of the oriented flux measure and the tubular geodesic method.
 
 \subsection{Tubularity Measure}
 
-The tubularity measure we propose to use is based on the Optimally Oriented Flux (OOF) \cite{Law08}.
-At the location $\mathbf{x}$ in an image $I$, the oriented flux is the amount of the image gradient projected along the axis $\mathbf{v}$ flowing out from a 3D local sphere\footnote{Centered at point $\mathbf{x}$.} (or a 2D circle) $S_r$. It is measured as follows:
+The tubularity measure we use is a function of the Optimally Oriented Flux (OOF) matrix \cite{Law08}.
+At each image location $\mathbf{x}$, the oriented flux measure is defined as the amount of the image gradient projected 
+along a direction $\mathbf{v}$ flowing out from a 3D local sphere (or a 2D circle) $S_r$ centered at the point $\mathbf{x}$. Let $I$ be the image. The OOF measure is defined as
 %++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 \begin{equation}
 f(\mathbf{x}, \mathbf{v};r)
@@ -194,7 +197,7 @@ f(\mathbf{x}, \mathbf{v};r)
 \label{eqn:oflux}
 \end{equation}
 %++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-where $G$ is a Gaussian function with a scale factor of $1$ pixel, $r$ is the radius of the sphere (or circle), $\mathbf{h} = r \mathbf{n}$ is the relative position vector along $\partial S_r$, with $\mathbf{n}$ the outward unit normal of $\partial S_r$, and $\mathrm{d}a$ is the infinitesimal area (or length) on $\partial S_r$. Function $f$ is the flux of the smoothed image gradient $\nabla(G*I)$ projected along direction $\mathbf{v}$ toward the sphere $\partial S_r$. To detect vessels having higher intensity than the background region, one would be interested in finding the vessel direction which minimizes $f(\mathbf{x}, \mathbf{v}; r)$, i.e. we are looking for:
+where $G$ is a Gaussian function with a sufficiently small standard deviation, $r$ is the radius of the sphere (or circle), $\mathbf{h} = r \mathbf{n}$ is the relative position vector along $\partial S_r$, with $\mathbf{n}$ the outward unit normal of $\partial S_r$, and $\mathrm{d}a$ is the infinitesimal area (or length) on $\partial S_r$. Function $f$ is the flux of the smoothed image gradient $\nabla(G*I)$ projected along direction $\mathbf{v}$ towards the sphere $\partial S_r$. To detect vessels having higher intensity values than the background, one would be interested in finding the vessel direction which minimizes $f(\mathbf{x}, \mathbf{v}; r)$, i.e. we are looking for:
 %++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 \begin{equation}
 \arg\min\limits_{\mathbf{v}} f(\mathbf{x}, \mathbf{v};r).
@@ -209,10 +212,9 @@ f(\mathbf{x}, \mathbf{v};r)= \mathbf{v}^{T}\,\,\left\{ I*(\partial_{i,j} G)*\mat
 %++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 where $(\partial_{i,j} G)$ is the Hessian matrix of function $G$ and $\mathds{1}_{S_r}$ is the indicator function of the sphere (or circle) $S_r$. $\mathbf{F}_r$ is called the \textit{oriented flux filter}. 
 
-By differentiating the above equation with respect to $\mathbf{v}$, minimization of function $f$ is in turn acquired as solving a generalized eigenvalue decomposition problem. Solving the aforementioned generalized eigen decomposition problem gives $d$ eigenvalues (where $d = 2 \text{ or }3$ is the dimension of the image), $\lambda_1(\cdot)\leq \dots\leq \lambda_{d}(\cdot)$. To handle the vessels having various radii, a multi-scale approach should be used along with the OOF method. In \cite{Law08}, Law and Chung have proposed to normalize the OOF's eigenvalues by the sphere surface area when the OOF method is incorporated in a multi-scale approach for 3D image volumes. In the 2D case the eigenvalues are normalized by the circle perimeter $2\pi r$. In the 3D case the eigenvalues are normalized by the sphere area $4\pi r^2$.
+By differentiating the above equation with respect to $\mathbf{v}$, minimization of function $f$ is in turn acquired as solving a generalized eigenvalue decomposition problem. Solving the aforementioned generalized eigen decomposition problem gives $N$ eigenvalues for an N-D image, $\lambda_1(\cdot)\leq \dots\leq \lambda_{N}(\cdot)$. To handle the tubular structures with varying thickness, we follow the multi-scale approach of Law and Chung~\cite{Law08}, which normalizes the  eigenvalues of the OOF matrix by the surface area of the sphere ($4\pi r^2$). In the 2D case, the eigenvalues are normalized by the circle perimeter $2\pi r$.
 
-We propose an ITK implementation of the oriented flux filter using the analytical expression of the OOF~\cite{Law08}. First, the filter \code{itk::OrientedFluxMatrixImageFilter} implements the normalized convolution $I*\mathbf{F}_r/r^{d-1}$, $d$ being the dimension of the image. This filter is templated over the input image type and the output image type for which the default pixel type is \code{itk::SymmetricSecondRankTensor}, since the output is a symmetric matrix. Then, the filter \code{itk::MultiScaleOrientedFluxBasedMeasureImageFilter} implements multi-scale oriented flux measures by combining the eigenvalues of the oriented flux matrix. This filter is very similar to \code{itk::MultiScaleHessianBasedMeasureImageFilter}. We added a few options like the possibility of generating the scale estimate at each voxel location and a scale space tubularity measure that could be used for tracing geodesic tubes.
-The proposed tubularity measures, \code{itk::OrientedFluxCrossSectionTraceMeasure}, sums the $(d-1)$ eigenvalues that correspond to the cross-section of the tubular structure. For a complete example, one can see the provided code: \code{itkMultiScaleOrientedFluxBasedMeasureImageFilter.cxx}.
+The normalized convolution $I*\mathbf{F}_r/r^{N-1}$ step is implemented in  the \code{itk::OrientedFluxMatrixImageFilter} class. This filter is templated over the input image type and the output image type for which the default pixel type is \code{itk::SymmetricSecondRankTensor}, since the OOF provides a symmetric matrix. The filter \code{itk::MultiScaleTubularityMeasureImageFilter} implements a multi-scale oriented flux measure by summing the $(N-1)$ eigenvalues of the OOF matrix that correspond to the cross-section of the tubular structures. In addition to the  (N+1)-D tubularity measure, the filter optionally outputs scale and OOF matrix images (see \code{itkMultiScaleTubularityMeasureImageFilter.cxx} for a complete example).
 
 \subsection{Tubular Geodesic}
 A \textit{tubular geodesic} is a path, linking two points, that globally minimizes an energy functional weighted by a tubularity measure. Without loss of generality and in order to simplify notations we will assume hereinafter that a path $\gamma$ is parametrized along its length (i.e $\|\gamma'\| = 1$). The energy minimized by a geodesic is under the form:
@@ -331,7 +333,7 @@ Below we show an example usage of the tubularity and geodesic computation steps 
 \lstinputlisting{example_code.cxx}
 
 \section{Conclusion}
-In this paper, we described an implementation of geodesic tubes for ITK. The framework allows a user to construct a scale space metric well suited for tubular structure. This metric is used to extract shortest tubes between points provided by a user, that is a centerline and width estimates. For suggestion or bugs, feel free to contact the authors.  
+In this paper, we described an implementation of geodesic tubes for ITK. The framework allows a user to construct a scale-space metric well suited for tubular structure. This metric is used to extract shortest tubes between points provided by a user, that is a centerline and width estimates. For suggestion or bugs, feel free to contact the authors.  
 
 \bibliographystyle{plain}
 \bibliography{TubularGeodesicITK}
