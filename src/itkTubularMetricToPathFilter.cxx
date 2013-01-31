@@ -72,70 +72,6 @@ void Usage(char* argv[])
 	<< std::endl << std::endl;
 }
 
-
-template <class TImage, class PathType>
-void WriteSWCFile(std::string fileName,
-									const PathType* path,
-									const TImage* image)
-{
-	std::streamsize		precision = 5;
-	
-	// Write the file.
-	std::ofstream ofs( fileName.c_str() );
-	if( ofs.fail() )
-	{
-		ofs.close();
-		std::cerr << "The file \'" << fileName
-			<< "\' could not be opened for writing." << std::endl;
-		exit(-1);
-	}
-	
-	// Set the precision	
-	ofs.precision(precision);
-	
-	// Traverse the point list of the path.
-	long vertexID = 1;              // vertex IDs start from 1.
-	const typename PathType::VertexListType::ElementIdentifier count (path->GetVertexList()->Size());
-	for(unsigned int i = 0; i < count; i++)
-	{
-		const typename PathType::VertexType& index = path->GetVertex(i);
-		typename PathType::RadiusType radi = path->GetVertexRadius(i);
-		// Write the point.
-		ofs << vertexID << " ";
-		ofs << 0 << " ";                                        // point type
-		for(unsigned int idx = 0; idx < PathType::Dimension; idx++)
-		{
-			ofs << index[idx]  << " ";
-		}
-		if(PathType::Dimension < 3)
-		{
-			ofs << "0"  << " ";
-		}
-		ofs << radi << " ";
-
-		// Write the parent id.
-		long parentID;
-		if( vertexID == 1 )
-		{
-			parentID = -1;
-		}
-		else
-		{
-			parentID = vertexID - 1;
-		}
-		ofs << parentID;
-		ofs << std::endl;
-		// increase the vertex id.
-		vertexID++;
-	}
-	ofs.close();
-	if( ofs.fail() )
-	{
-		std::cerr << "An error has occurred during writing the file \'" << fileName << "\' .";
-	}
-}
-
-
 // Check the arguments and try to parse the input image.
 int main ( int argc, char* argv[] )
 {
@@ -438,20 +374,10 @@ int Execute(int argc, char* argv[])
 	// First, get the scale space path
 	// This path is written in continuous index
 	typename ScaleSpacePathType::Pointer outputPath = pathFilter->GetPath(0);
+	
 	//Convert it to a tubular path 
-	typename PathType::Pointer					 path = PathType::New();
-	for(unsigned int k = 0; k < outputPath->GetVertexList()->Size(); k++)
-	{
-		typename MetricToPathFilterType::VertexType vertex      = outputPath->GetVertexList()->GetElement(k);
-		typename PathType::VertexType               transVertex;
-		for (unsigned int i = 0; i < Dimension; i++)
-	  {
-			transVertex[i] = vertex[i]*spacing[i]+origin[i];
-	  }
-		path->AddVertex( transVertex );
-		double radius = vertex[Dimension]*spacing[Dimension]+origin[Dimension];
-		path->SetVertexRadius(k, radius);
-	}
+	typename PathType::Pointer path = 
+	outputPath->ConvertToNMinus1DPath(origin[Dimension], spacing[Dimension]);
 	
 	// Downsample the path and smooth it slightly.
 	if (resamplePath)
@@ -463,8 +389,8 @@ int Execute(int argc, char* argv[])
 		path->SmoothVertexLocationsAndRadii(minSpacing, inputImage.GetPointer());
 	}
 	
-	// Write the file
-	WriteSWCFile< InputBackgroundImageType, PathType >( outputSWCFile, path, inputImage);
+	// Write the path to the specified swc file in world coordinates.
+	path->WriteSwcFile(outputSWCFile, inputImage.GetPointer(), true);
 	
 	return EXIT_SUCCESS;
 }

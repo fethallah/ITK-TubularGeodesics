@@ -67,6 +67,9 @@ namespace itk
 		/** Output type */
 		typedef typename Superclass::OutputType OutputType;
 		
+		/** Higher and lower dimensional path types. */
+		typedef PolyLineParametricTubularPath<(Dimension > 0) ? Dimension-1 : Dimension> NMinus1DPathType;
+		typedef PolyLineParametricTubularPath<(Dimension < 5) ? Dimension+1 : Dimension> NPlus1DPathType;
 		
 		/** Basic data-structure types used */
 		typedef ContinuousIndex<double,VDimension>    ContinuousIndexType;
@@ -167,6 +170,40 @@ namespace itk
 																			 bool traverseForward,
 																			 InputType& endPoint,
 																			 double& traversedDistance) const;
+		
+		/** 
+		 * Convert an N-D path to an (N-1)-D path by discarding the current radius 
+		 * value and treating the last dimension as the new radius dimension.
+		 */
+		virtual typename NMinus1DPathType::Pointer 
+		ConvertToNMinus1DPath(double radiusOrigin, double radiusSpacing) const;
+		
+		/** 
+		 * Convert an N-D path to an (N+1)-D path by treating the current radius  
+		 * value as the coordinate value of the new dimension.
+		 */
+		virtual typename NPlus1DPathType::Pointer 
+		ConvertToNPlus1DPath(double radiusOrigin, double radiusSpacing) const;
+		
+		/** 
+		 * Write the path to an swc file.
+		 * The last optional argument is the comment string for the swc file.
+		 */
+		template <class TImage>
+		void WriteSwcFile(const std::string& fileName,
+											const TImage* image,
+											bool pointsInWorldCoords,
+											const std::string& comments = std::string() ) const;
+		
+		/** 
+		 * Populate the path by reading from an swc file.
+		 * Returns the comment string in the file if there exist one.
+		 */
+		template <class TImage>
+		std::string ReadSwcFile(const std::string& fileName,
+														const TImage* image,
+														bool pointsInWorldCoords);
+		
 		
 		virtual OffsetType IncrementInput(InputType & input) const;
 		

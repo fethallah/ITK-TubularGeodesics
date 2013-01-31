@@ -283,6 +283,54 @@ The main filter to compute a geodesic path given a tubularity measure is \code{i
 
 \section{Examples}
 
+%FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+\begin{figure}[t]
+  \centering
+  \begin{tabular}{ccc}
+    \includegraphics[height=0.31\columnwidth, width=0.31\columnwidth]{Synthetic-02.png} &
+    \includegraphics[width=0.31\columnwidth]{Real-DSA-01.png} &
+    \includegraphics[width=0.31\columnwidth]{OP_1_3D.png} \\
+    \includegraphics[height=0.31\columnwidth, width=0.31\columnwidth]{Synthetic-02_reconst.png} &
+    \includegraphics[width=0.31\columnwidth]{Real-DSA-01_reconst.png} &
+    \includegraphics[width=0.31\columnwidth]{OP_1_reconst_3D.png}  \\
+  \end{tabular}
+  \caption{  \label{fig:results} First row: from left to right, a synthetically generated image containing a 
+  spiral shape, a 2D cerebral angiogram, a 3D stack of olfactory projection fibers  (OP) from the DIADEM 
+  competition \cite{TODO}. Second row: tracing results overlaid on top of the images. Each branch in the 
+  structures is traced by manually providing a start and an end point. The reconstruction for the OP stack is 
+  color coded for easier visibility.}
+  \vspace{-0.3cm}
+\end{figure}
+%FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+
+We've evaluated our pipeline on a large variety of noisy 2D images and 3D images stacks. Figure~\ref{fig:results}  
+shows three sample results on a synthetically generated image, a 2D cerebral angiogram and a 3D stack of neurite fibers. Maximum intensity projections of the tubularity stacks for each scale level are shown in figure~\ref{fig:mip_tubularity_images}. 
+
+Below we show an example usage of the tubularity and geodesic computation steps for the 3D stack shown in figure~\ref{fig:results}.
+
+%FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+\begin{figure}[t]
+  \centering
+  \begin{tabular}{ccc}
+    \includegraphics[width=0.31\columnwidth]{OP_1_01_max_scale_space_tubularity.png} &
+    \includegraphics[width=0.31\columnwidth]{OP_1_03_max_scale_space_tubularity.png} &
+    \includegraphics[width=0.31\columnwidth]{OP_1_05_max_scale_space_tubularity.png} \\
+    $r = 1.0$ & $r = 2.0$ & $r = 3.0$ \\ \\
+    \includegraphics[width=0.31\columnwidth]{OP_1_07_max_scale_space_tubularity.png} &
+    \includegraphics[width=0.31\columnwidth]{OP_1_09_max_scale_space_tubularity.png} &
+    \includegraphics[width=0.31\columnwidth]{OP_1_11_max_scale_space_tubularity.png}  \\
+    $r = 4.0$ & $r = 5.0$ & $r = 6.0$ \\
+  \end{tabular}
+  \caption{  \label{fig:mip_tubularity_images} Maximum intensity projections of the computed 
+  tubularity volumes for the OP stack shown in the last column of figure~\ref{fig:results}. 
+  Each image corresponds to a different radius level $r$, which is given below it.}
+  \vspace{-0.3cm}
+\end{figure}
+%FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+
+\listcpluspluspsnip
+\lstinputlisting{example_code.cxx}
+
 \section{Conclusion}
 
 

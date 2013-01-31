@@ -1,22 +1,11 @@
 //**********************************************************
-//Copyright 2011 Fethallah Benmansour & Engin Turetken
+//Copyright 2011 Engin Turetken & Fethallah Benmansour
 //
 //Licensed under the Apache License, Version 2.0 (the "License"); 
 //you may not use this file except in compliance with the License. 
 //You may obtain a copy of the License at
 //
 //http://www.apache.org/licenses/LICENSE-2.0 
-//
-//This class has been obtained by modifiying the 
-//itkMultiScaleHessianBasedMeasureImageFilter.txx file of the ITK library 
-//distributed and coyrighted by Insight Software Consortium.  
-//The reason for modifications is to enable calling the SetSigma method of the 
-//HessianToMeasureFilter (if it exists) for each scale level.  Another reason is 
-//to output an (N+1)-D output hessian-based measure image instead of an N-D one.
-//Modified By:	Engin Turetken
-//Date:			17.10.2011
-//Modified By:	Fethallah Benmansour
-//Date:			19.12.2011
 //
 //Unless required by applicable law or agreed to in writing, software 
 //distributed under the License is distributed on an "AS IS" BASIS, 
@@ -25,29 +14,27 @@
 //limitations under the License.
 //**********************************************************
 
-#ifndef __itkMultiScaleOrientedFluxBasedMeasureImageFilter_hxx
-#define __itkMultiScaleOrientedFluxBasedMeasureImageFilter_hxx
+#ifndef __itkMultiScaleTubularityMeasureImageFilter_hxx
+#define __itkMultiScaleTubularityMeasureImageFilter_hxx
 
-#include "itkMultiScaleOrientedFluxBasedMeasureImageFilter.h"
+#include "itkMultiScaleTubularityMeasureImageFilter.h"
 #include "itkImageRegionIterator.h"
 #include "itkImageRegionConstIterator.h"
 #include "vnl/vnl_math.h"
-#include <omp.h>
 
 namespace itk
 {
-
 	/**
 	 * Constructor
 	 */
 	template 	<typename TInputImage,
-	typename THessianImage,
+	typename TOrientedFluxImage,
 	typename TScaleImage,
-	typename THessianToMeasureFilter,
+	typename TOrientedFluxToMeasureFilter,
 	typename TOutputNDImage>
-	MultiScaleOrientedFluxBasedMeasureImageFilter
-	<TInputImage,THessianImage,TScaleImage,THessianToMeasureFilter,TOutputNDImage>
-	::MultiScaleOrientedFluxBasedMeasureImageFilter()
+	MultiScaleTubularityMeasureImageFilter
+	<TInputImage,TOrientedFluxImage,TScaleImage,TOrientedFluxToMeasureFilter,TOutputNDImage>
+	::MultiScaleTubularityMeasureImageFilter()
 	{
 		m_SigmaMinimum = 0.2;
 		m_SigmaMaximum = 2.0;
@@ -61,14 +48,14 @@ namespace itk
 		//Instantiate Update buffer
 		m_UpdateBuffer = UpdateBufferType::New();
 		
-		m_FixedSigmaForHessianImage = 1.0;
+		m_FixedSigmaForOrientedFluxImage = 1.0;
 		
 		m_BrightObject = true;
 		
 		m_GenerateScaleOutput = false;
-		m_GenerateHessianOutput = false;
-		m_GenerateNPlus1DHessianOutput = false;
-		m_GenerateNPlus1DHessianMeasureOutput = false;
+		m_GenerateOrientedFluxOutput = false;
+		m_GenerateNPlus1DOrientedFluxOutput = false;
+		m_GenerateNPlus1DOrientedFluxMeasureOutput = false;
 		
 		this->ProcessObject::SetNumberOfRequiredOutputs(5);
 		this->ProcessObject::SetNthOutput(1,this->MakeOutput(1));
@@ -81,13 +68,13 @@ namespace itk
 	 * SetNumberOfSigmaSteps
 	 */	
 	template 	<typename TInputImage,
-	typename THessianImage,
+	typename TOrientedFluxImage,
 	typename TScaleImage,
-	typename THessianToMeasureFilter,
+	typename TOrientedFluxToMeasureFilter,
 	typename TOutputNDImage>
 	void
-	MultiScaleOrientedFluxBasedMeasureImageFilter
-	<TInputImage,THessianImage,TScaleImage,THessianToMeasureFilter,TOutputNDImage>
+	MultiScaleTubularityMeasureImageFilter
+	<TInputImage,TOrientedFluxImage,TScaleImage,TOrientedFluxToMeasureFilter,TOutputNDImage>
 	::SetNumberOfSigmaSteps( unsigned int numOfSigmaSteps )
 	{
 		m_NumberOfSigmaSteps = numOfSigmaSteps;
@@ -116,13 +103,13 @@ namespace itk
 	 * EnlargeOutputRequestedRegion
 	 */	
 	template 	<typename TInputImage,
-	typename THessianImage,
+	typename TOrientedFluxImage,
 	typename TScaleImage,
-	typename THessianToMeasureFilter,
+	typename TOrientedFluxToMeasureFilter,
 	typename TOutputNDImage>
 	void
-	MultiScaleOrientedFluxBasedMeasureImageFilter
-	<TInputImage,THessianImage,TScaleImage,THessianToMeasureFilter,TOutputNDImage>
+	MultiScaleTubularityMeasureImageFilter
+	<TInputImage,TOrientedFluxImage,TScaleImage,TOrientedFluxToMeasureFilter,TOutputNDImage>
 	::EnlargeOutputRequestedRegion (DataObject *output)
 	{
 		// currently this filter can not stream so we must set the outputs
@@ -138,23 +125,23 @@ namespace itk
 		dynamic_cast<OutputNPlus1DImageType*>(this->ProcessObject::GetOutput(3));
 		outputPtr->SetRequestedRegionToLargestPossibleRegion();
 		
-		typename NPlus1DHessianImageType::Pointer  nPlus1DHessianPtr = 
-		dynamic_cast<NPlus1DHessianImageType*>(this->ProcessObject::GetOutput(4));
-		nPlus1DHessianPtr->SetRequestedRegionToLargestPossibleRegion();
+		typename NPlus1DOrientedFluxImageType::Pointer  nPlus1DOrientedFluxPtr = 
+		dynamic_cast<NPlus1DOrientedFluxImageType*>(this->ProcessObject::GetOutput(4));
+		nPlus1DOrientedFluxPtr->SetRequestedRegionToLargestPossibleRegion();
 	}
 	
 	/**
 	 * MakeOutput
 	 */	
 	template 	<typename TInputImage,
-	typename THessianImage,
+	typename TOrientedFluxImage,
 	typename TScaleImage,
-	typename THessianToMeasureFilter,
+	typename TOrientedFluxToMeasureFilter,
 	typename TOutputNDImage>
-	typename MultiScaleOrientedFluxBasedMeasureImageFilter 
-  <TInputImage,THessianImage,TScaleImage,THessianToMeasureFilter,TOutputNDImage>::DataObjectPointer
-	MultiScaleOrientedFluxBasedMeasureImageFilter
-	<TInputImage,THessianImage,TScaleImage,THessianToMeasureFilter,TOutputNDImage>
+	typename MultiScaleTubularityMeasureImageFilter 
+  <TInputImage,TOrientedFluxImage,TScaleImage,TOrientedFluxToMeasureFilter,TOutputNDImage>::DataObjectPointer
+	MultiScaleTubularityMeasureImageFilter
+	<TInputImage,TOrientedFluxImage,TScaleImage,TOrientedFluxToMeasureFilter,TOutputNDImage>
 	::MakeOutput(DataObject::DataObjectPointerArraySizeType idx)
 	{
 		if (idx == 1)
@@ -163,7 +150,7 @@ namespace itk
 		}
 		else if (idx == 2)
 		{
-			return static_cast<DataObject*>(HessianImageType::New().GetPointer());
+			return static_cast<DataObject*>(OrientedFluxImageType::New().GetPointer());
 		}
 		else if (idx == 3)
 		{
@@ -171,7 +158,7 @@ namespace itk
 		}
 		else if (idx == 4)
 		{
-			return static_cast<DataObject*>(NPlus1DHessianImageType::New().GetPointer());
+			return static_cast<DataObject*>(NPlus1DOrientedFluxImageType::New().GetPointer());
 		}	
 		else // (idx == 0)
 		{
@@ -181,13 +168,13 @@ namespace itk
 	
 	
 	template 	<typename TInputImage,
-	typename THessianImage,
+	typename TOrientedFluxImage,
 	typename TScaleImage,
-	typename THessianToMeasureFilter,
+	typename TOrientedFluxToMeasureFilter,
 	typename TOutputNDImage>
 	void
-	MultiScaleOrientedFluxBasedMeasureImageFilter
-	<TInputImage,THessianImage,TScaleImage,THessianToMeasureFilter,TOutputNDImage>
+	MultiScaleTubularityMeasureImageFilter
+	<TInputImage,TOrientedFluxImage,TScaleImage,TOrientedFluxToMeasureFilter,TOutputNDImage>
 	::CallCopyInputRegionToOutputRegion(OutputNPlus1DRegionType &destRegion,
 																			const InputRegionType &srcRegion)
 	{
@@ -196,16 +183,16 @@ namespace itk
 	}
 	
 	/** Copy information from the input image to output images except 
-	 * the (N+1)-D hessian-based image. For that, we compute the scales 
+	 * the (N+1)-D images. For that, we compute the scales 
 	 * and create a scale-space image. */
 	template 	<typename TInputImage,
-	typename THessianImage,
+	typename TOrientedFluxImage,
 	typename TScaleImage,
-	typename THessianToMeasureFilter,
+	typename TOrientedFluxToMeasureFilter,
 	typename TOutputNDImage>
 	void
-	MultiScaleOrientedFluxBasedMeasureImageFilter
-	<TInputImage,THessianImage,TScaleImage,THessianToMeasureFilter,TOutputNDImage>
+	MultiScaleTubularityMeasureImageFilter
+	<TInputImage,TOrientedFluxImage,TScaleImage,TOrientedFluxToMeasureFilter,TOutputNDImage>
 	::GenerateOutputInformation()
 	{
 		// Copy information for the first three output images first.
@@ -300,18 +287,18 @@ namespace itk
 			outputPtr->SetNumberOfComponentsPerPixel( // propagate vector length info
 																							 inputPtr->GetNumberOfComponentsPerPixel());
 			
-			// Now, do the same thing for the (N+1)-D Hessian image.
-			typename NPlus1DHessianImageType::Pointer  outputNPlus1DHessianPtr = 
-			dynamic_cast<NPlus1DHessianImageType*>(this->ProcessObject::GetOutput(4));
-			if ( !outputNPlus1DHessianPtr )
+			// Now, do the same thing for the (N+1)-D OrientedFlux image.
+			typename NPlus1DOrientedFluxImageType::Pointer  outputNPlus1DOrientedFluxPtr = 
+			dynamic_cast<NPlus1DOrientedFluxImageType*>(this->ProcessObject::GetOutput(4));
+			if ( !outputNPlus1DOrientedFluxPtr )
 			{
 				return;
 			}
-			outputNPlus1DHessianPtr->SetLargestPossibleRegion( outputLargestPossibleRegion );
-			outputNPlus1DHessianPtr->SetSpacing( outputSpacing );
-			outputNPlus1DHessianPtr->SetOrigin( outputOrigin );
-			outputNPlus1DHessianPtr->SetDirection( outputDirection );
-			outputNPlus1DHessianPtr->SetNumberOfComponentsPerPixel( // propagate vector length info
+			outputNPlus1DOrientedFluxPtr->SetLargestPossibleRegion( outputLargestPossibleRegion );
+			outputNPlus1DOrientedFluxPtr->SetSpacing( outputSpacing );
+			outputNPlus1DOrientedFluxPtr->SetOrigin( outputOrigin );
+			outputNPlus1DOrientedFluxPtr->SetDirection( outputDirection );
+			outputNPlus1DOrientedFluxPtr->SetNumberOfComponentsPerPixel( // propagate vector length info
 																														 inputPtr->GetNumberOfComponentsPerPixel());
 		}
 	}
@@ -321,13 +308,13 @@ namespace itk
 	 * AllocateUpdateBuffer
 	 */
 	template 	<typename TInputImage,
-	typename THessianImage,
+	typename TOrientedFluxImage,
 	typename TScaleImage,
-	typename THessianToMeasureFilter,
+	typename TOrientedFluxToMeasureFilter,
 	typename TOutputNDImage>
 	void
-	MultiScaleOrientedFluxBasedMeasureImageFilter
-	<TInputImage,THessianImage,TScaleImage,THessianToMeasureFilter,TOutputNDImage>
+	MultiScaleTubularityMeasureImageFilter
+	<TInputImage,TOrientedFluxImage,TScaleImage,TOrientedFluxToMeasureFilter,TOutputNDImage>
 	::AllocateUpdateBuffer()
 	{
 		/* The update buffer looks just like the output and holds the best response
@@ -350,13 +337,13 @@ namespace itk
 	 * AllocateOutputs
 	 */
 	template 	<typename TInputImage,
-	typename THessianImage,
+	typename TOrientedFluxImage,
 	typename TScaleImage,
-	typename THessianToMeasureFilter,
+	typename TOrientedFluxToMeasureFilter,
 	typename TOutputNDImage>
 	void
-	MultiScaleOrientedFluxBasedMeasureImageFilter
-	<TInputImage,THessianImage,TScaleImage,THessianToMeasureFilter,TOutputNDImage>
+	MultiScaleTubularityMeasureImageFilter
+	<TInputImage,TOrientedFluxImage,TScaleImage,TOrientedFluxToMeasureFilter,TOutputNDImage>
 	::AllocateOutputs()
 	{
 		// Allocate the output
@@ -373,29 +360,29 @@ namespace itk
 			scaleImage->FillBuffer(0);
 		}
 		
-		if (m_GenerateHessianOutput)
+		if (m_GenerateOrientedFluxOutput)
 		{
-			typename HessianImageType::Pointer hessianImage = 
-			dynamic_cast<HessianImageType*>(this->ProcessObject::GetOutput(2));
+			typename OrientedFluxImageType::Pointer orientedFluxImage = 
+			dynamic_cast<OrientedFluxImageType*>(this->ProcessObject::GetOutput(2));
 			
-			hessianImage->SetBufferedRegion(hessianImage->GetRequestedRegion());
-			hessianImage->Allocate();
+			orientedFluxImage->SetBufferedRegion(orientedFluxImage->GetRequestedRegion());
+			orientedFluxImage->Allocate();
 			// SymmetricSecondRankTensor is already filled with zero elements at construction. 
 			// No strict need of filling the buffer, but we do it explicitly here to make sure.
-			typename HessianImageType::PixelType zeroTensor(0.0);
-			hessianImage->FillBuffer(zeroTensor);
+			typename OrientedFluxImageType::PixelType zeroTensor(0.0);
+			orientedFluxImage->FillBuffer(zeroTensor);
 		}
 		
-		if (m_GenerateNPlus1DHessianOutput)
+		if (m_GenerateNPlus1DOrientedFluxOutput)
 		{
-			typename NPlus1DHessianImageType::Pointer nPlus1DHessianImage = 
-			dynamic_cast<NPlus1DHessianImageType*>(this->ProcessObject::GetOutput(4));
+			typename NPlus1DOrientedFluxImageType::Pointer nPlus1DOrientedFluxImage = 
+			dynamic_cast<NPlus1DOrientedFluxImageType*>(this->ProcessObject::GetOutput(4));
 			
-			nPlus1DHessianImage->SetBufferedRegion(nPlus1DHessianImage->GetRequestedRegion());
-			nPlus1DHessianImage->Allocate();
+			nPlus1DOrientedFluxImage->SetBufferedRegion(nPlus1DOrientedFluxImage->GetRequestedRegion());
+			nPlus1DOrientedFluxImage->Allocate();
 		}
 		
-		if( m_GenerateNPlus1DHessianMeasureOutput )
+		if( m_GenerateNPlus1DOrientedFluxMeasureOutput )
 		{
 			typename OutputNPlus1DImageType::Pointer outputNPlus1DImage = 
 			dynamic_cast<OutputNPlus1DImageType*>(this->ProcessObject::GetOutput(3));
@@ -409,40 +396,43 @@ namespace itk
 	 * GenerateData
 	 */	
 	template 	<typename TInputImage,
-	typename THessianImage,
+	typename TOrientedFluxImage,
 	typename TScaleImage,
-	typename THessianToMeasureFilter,
+	typename TOrientedFluxToMeasureFilter,
 	typename TOutputNDImage>
 	void
-	MultiScaleOrientedFluxBasedMeasureImageFilter
-	<TInputImage,THessianImage,TScaleImage,THessianToMeasureFilter,TOutputNDImage>
+	MultiScaleTubularityMeasureImageFilter
+	<TInputImage,TOrientedFluxImage,TScaleImage,TOrientedFluxToMeasureFilter,TOutputNDImage>
 	::GenerateData()
 	{
 		// Allocate outputs
 		AllocateOutputs();
+		
 		// Allocate the buffer
 		AllocateUpdateBuffer();
 		
 		typename InputImageType::ConstPointer input = this->GetInput();
 				
-		std::cout << "sigma0 is :" << m_FixedSigmaForHessianImage << std::endl;
+//		std::cout << "sigma0 is :" << m_FixedSigmaForOrientedFluxImage << std::endl;
 		
 		m_OrientedFluxToMeasureFilterList.resize(m_NumberOfSigmaSteps);
 		
 		for (int i = 0; i < ((int)m_NumberOfSigmaSteps); i++)
 		{
 			typename FFTOrientedFluxType::Pointer conv = FFTOrientedFluxType::New();
-			//conv->SetInput( threadInput );
 			conv->SetInput( input );
-			conv->SetSigma0( m_FixedSigmaForHessianImage );
+			conv->SetSigma0( m_FixedSigmaForOrientedFluxImage );
 			conv->SetNumberOfThreads( this->GetNumberOfThreads() );
 			conv->SetRadius( m_Sigmas[i] );
-			itk::TimeProbe time;
-			time.Start();
+			
+//			itk::TimeProbe time;
+//			time.Start();
+			
 			conv->Update();
-			time.Stop();			
-			std::cout << "at scale :" << m_Sigmas[i] << std::endl;
-			std::cout << "elapsed time for computing the Oriented Flux matrix: " << time.GetMean() << " seconds" <<  std::endl;
+			
+//			time.Stop();			
+//			std::cout << "at scale :" << m_Sigmas[i] << std::endl;
+//			std::cout << "elapsed time for computing the Oriented Flux matrix: " << time.GetMean() << " seconds" <<  std::endl;
 			
 			typename OrientedFluxToMeasureFilterType::Pointer orientedFluxToMeasureFilter = OrientedFluxToMeasureFilterType::New();
 			orientedFluxToMeasureFilter->SetBrightObject(m_BrightObject);
@@ -482,13 +472,13 @@ namespace itk
 	 * UpdateMaximumResponse
 	 */
 	template 	<typename TInputImage,
-	typename THessianImage,
+	typename TOrientedFluxImage,
 	typename TScaleImage,
-	typename THessianToMeasureFilter,
+	typename TOrientedFluxToMeasureFilter,
 	typename TOutputNDImage>
 	void
-	MultiScaleOrientedFluxBasedMeasureImageFilter
-	<TInputImage,THessianImage,TScaleImage,THessianToMeasureFilter,TOutputNDImage>
+	MultiScaleTubularityMeasureImageFilter
+	<TInputImage,TOrientedFluxImage,TScaleImage,TOrientedFluxToMeasureFilter,TOutputNDImage>
 	::UpdateMaximumResponse(double sigma, unsigned int scaleLevel)
 	{
 		// the meta-data should match between these images, therefore we
@@ -499,16 +489,16 @@ namespace itk
 		typename ScaleImageType::Pointer scaleImage = static_cast<ScaleImageType*>(this->ProcessObject::GetOutput(1));
 		ImageRegionIterator<ScaleImageType> osit;
 		
-		typename HessianImageType::Pointer hessianImage = static_cast<HessianImageType*>(this->ProcessObject::GetOutput(2));
-		ImageRegionIterator<HessianImageType> ohit;
+		typename OrientedFluxImageType::Pointer orientedFluxImage = static_cast<OrientedFluxImageType*>(this->ProcessObject::GetOutput(2));
+		ImageRegionIterator<OrientedFluxImageType> ohit;
 		
 		typename OutputNPlus1DImageType::Pointer outputNPlus1DImage = 
 		static_cast<OutputNPlus1DImageType*>(this->ProcessObject::GetOutput(3));
 		ImageRegionIterator<OutputNPlus1DImageType> o2it;
 		
-		typename NPlus1DHessianImageType::Pointer nPlus1DHessianImage = 
-		static_cast<NPlus1DHessianImageType*>(this->ProcessObject::GetOutput(4));
-		ImageRegionIterator<NPlus1DHessianImageType> o3it;	
+		typename NPlus1DOrientedFluxImageType::Pointer nPlus1DOrientedFluxImage = 
+		static_cast<NPlus1DOrientedFluxImageType*>(this->ProcessObject::GetOutput(4));
+		ImageRegionIterator<NPlus1DOrientedFluxImageType> o3it;	
 		
 		oit.GoToBegin();
 		if( m_GenerateScaleOutput )
@@ -516,15 +506,15 @@ namespace itk
 			osit = ImageRegionIterator<ScaleImageType> ( scaleImage, outputRegion );
 			osit.GoToBegin();
 		}
-		if( m_GenerateHessianOutput )
+		if( m_GenerateOrientedFluxOutput )
 		{
-			ohit = ImageRegionIterator<HessianImageType> ( hessianImage, outputRegion );
+			ohit = ImageRegionIterator<OrientedFluxImageType> ( orientedFluxImage, outputRegion );
 			ohit.GoToBegin();
 		}
 		
 		// Create an iterator for the given sigma layer of the (N+1)-D image.
 		OutputNPlus1DRegionType outputNPlus1DRegion;
-		if( m_GenerateNPlus1DHessianMeasureOutput || m_GenerateNPlus1DHessianOutput )
+		if( m_GenerateNPlus1DOrientedFluxMeasureOutput || m_GenerateNPlus1DOrientedFluxOutput )
 		{
 			this->CallCopyInputRegionToOutputRegion(outputNPlus1DRegion, outputRegion);
 			typename OutputNPlus1DImageType::IndexType outputNPlus1DRegionIndex = outputNPlus1DRegion.GetIndex();
@@ -535,15 +525,15 @@ namespace itk
 			outputNPlus1DRegion.SetSize( outputNPlus1DRegionSize );
 		}
 		
-		if( m_GenerateNPlus1DHessianMeasureOutput )
+		if( m_GenerateNPlus1DOrientedFluxMeasureOutput )
 		{
 			o2it = ImageRegionIterator<OutputNPlus1DImageType> ( outputNPlus1DImage, outputNPlus1DRegion );
 			o2it.GoToBegin();
 		}
 		
-		if( m_GenerateNPlus1DHessianOutput )
+		if( m_GenerateNPlus1DOrientedFluxOutput )
 		{
-			o3it = ImageRegionIterator<NPlus1DHessianImageType> ( nPlus1DHessianImage, outputNPlus1DRegion );
+			o3it = ImageRegionIterator<NPlus1DOrientedFluxImageType> ( nPlus1DOrientedFluxImage, outputNPlus1DRegion );
 			o3it.GoToBegin();
 		}
 		
@@ -551,7 +541,7 @@ namespace itk
 		typedef typename OrientedFluxToMeasureFilterType::OutputImageType OrientedFluxToMeasureOutputImageType;
 		
 		ImageRegionIterator<OrientedFluxToMeasureOutputImageType> it( m_OrientedFluxToMeasureFilterList[scaleLevel]->GetOutput(), outputRegion );
-		ImageRegionConstIterator<HessianImageType> hit( m_OrientedFluxToMeasureFilterList[scaleLevel]->GetInput(), outputRegion );
+		ImageRegionConstIterator<OrientedFluxImageType> hit( m_OrientedFluxToMeasureFilterList[scaleLevel]->GetInput(), outputRegion );
 		
 		it.GoToBegin();
 		hit.GoToBegin();
@@ -565,17 +555,17 @@ namespace itk
 				{
 					osit.Value() = static_cast< ScalePixelType >( sigma );
 				}
-				if( m_GenerateHessianOutput )
+				if( m_GenerateOrientedFluxOutput )
 				{
 					ohit.Value() = hit.Value();
 				}
 			}
-			if( m_GenerateNPlus1DHessianMeasureOutput )
+			if( m_GenerateNPlus1DOrientedFluxMeasureOutput )
 			{
 				o2it.Value() = it.Value();
 				++o2it;
 			}
-			if( m_GenerateNPlus1DHessianOutput )
+			if( m_GenerateNPlus1DOrientedFluxOutput )
 			{
 				o3it.Value() = hit.Value();
 				++o3it;
@@ -586,11 +576,11 @@ namespace itk
 			{
 				++osit;
 			}
-			if( m_GenerateHessianOutput )
+			if( m_GenerateOrientedFluxOutput )
 			{
 				++ohit;
 			}
-			if( m_GenerateHessianOutput || m_GenerateNPlus1DHessianOutput )
+			if( m_GenerateOrientedFluxOutput || m_GenerateNPlus1DOrientedFluxOutput )
 			{
 				++hit;
 			}
@@ -600,13 +590,13 @@ namespace itk
 	}
 	
 	template 	<typename TInputImage,
-	typename THessianImage,
+	typename TOrientedFluxImage,
 	typename TScaleImage,
-	typename THessianToMeasureFilter,
+	typename TOrientedFluxToMeasureFilter,
 	typename TOutputNDImage>
 	double
-	MultiScaleOrientedFluxBasedMeasureImageFilter
-	<TInputImage,THessianImage,TScaleImage,THessianToMeasureFilter,TOutputNDImage>
+	MultiScaleTubularityMeasureImageFilter
+	<TInputImage,TOrientedFluxImage,TScaleImage,TOrientedFluxToMeasureFilter,TOutputNDImage>
 	::ComputeSigmaValue(int scaleLevel)
 	{
 		if (m_NumberOfSigmaSteps < 2)
@@ -619,69 +609,69 @@ namespace itk
 	}
 	
 	template 	<typename TInputImage,
-	typename THessianImage,
+	typename TOrientedFluxImage,
 	typename TScaleImage,
-	typename THessianToMeasureFilter,
+	typename TOrientedFluxToMeasureFilter,
 	typename TOutputNDImage>
-	typename MultiScaleOrientedFluxBasedMeasureImageFilter
-	<TInputImage,THessianImage,TScaleImage,THessianToMeasureFilter,TOutputNDImage>::OutputNPlus1DImageType * 
-	MultiScaleOrientedFluxBasedMeasureImageFilter
-	<TInputImage,THessianImage,TScaleImage,THessianToMeasureFilter,TOutputNDImage>
+	typename MultiScaleTubularityMeasureImageFilter
+	<TInputImage,TOrientedFluxImage,TScaleImage,TOrientedFluxToMeasureFilter,TOutputNDImage>::OutputNPlus1DImageType * 
+	MultiScaleTubularityMeasureImageFilter
+	<TInputImage,TOrientedFluxImage,TScaleImage,TOrientedFluxToMeasureFilter,TOutputNDImage>
 	::GetNPlus1DImageOutput()
 	{
 		return static_cast<OutputNPlus1DImageType*>(this->ProcessObject::GetOutput(3));
 	}
 	
 	template 	<typename TInputImage,
-	typename THessianImage,
+	typename TOrientedFluxImage,
 	typename TScaleImage,
-	typename THessianToMeasureFilter,
+	typename TOrientedFluxToMeasureFilter,
 	typename TOutputNDImage>
-	typename MultiScaleOrientedFluxBasedMeasureImageFilter
-	<TInputImage,THessianImage,TScaleImage,THessianToMeasureFilter,TOutputNDImage>::HessianImageType * 
-	MultiScaleOrientedFluxBasedMeasureImageFilter
-	<TInputImage,THessianImage,TScaleImage,THessianToMeasureFilter,TOutputNDImage>
-	::GetHessianOutput()
+	typename MultiScaleTubularityMeasureImageFilter
+	<TInputImage,TOrientedFluxImage,TScaleImage,TOrientedFluxToMeasureFilter,TOutputNDImage>::OrientedFluxImageType * 
+	MultiScaleTubularityMeasureImageFilter
+	<TInputImage,TOrientedFluxImage,TScaleImage,TOrientedFluxToMeasureFilter,TOutputNDImage>
+	::GetOrientedFluxOutput()
 	{
-		return static_cast<HessianImageType*>(this->ProcessObject::GetOutput(2));
+		return static_cast<OrientedFluxImageType*>(this->ProcessObject::GetOutput(2));
 	}
 	
 	template 	<typename TInputImage,
-	typename THessianImage,
+	typename TOrientedFluxImage,
 	typename TScaleImage,
-	typename THessianToMeasureFilter,
+	typename TOrientedFluxToMeasureFilter,
 	typename TOutputNDImage>
-	typename MultiScaleOrientedFluxBasedMeasureImageFilter
-	<TInputImage,THessianImage,TScaleImage,THessianToMeasureFilter,TOutputNDImage>::NPlus1DHessianImageType * 
-	MultiScaleOrientedFluxBasedMeasureImageFilter
-	<TInputImage,THessianImage,TScaleImage,THessianToMeasureFilter,TOutputNDImage>
-	::GetNPlus1DHessianOutput()
+	typename MultiScaleTubularityMeasureImageFilter
+	<TInputImage,TOrientedFluxImage,TScaleImage,TOrientedFluxToMeasureFilter,TOutputNDImage>::NPlus1DOrientedFluxImageType * 
+	MultiScaleTubularityMeasureImageFilter
+	<TInputImage,TOrientedFluxImage,TScaleImage,TOrientedFluxToMeasureFilter,TOutputNDImage>
+	::GetNPlus1DOrientedFluxOutput()
 	{
-		return static_cast<NPlus1DHessianImageType*>(this->ProcessObject::GetOutput(4));
+		return static_cast<NPlus1DOrientedFluxImageType*>(this->ProcessObject::GetOutput(4));
 	}
 	
 	template 	<typename TInputImage,
-	typename THessianImage,
+	typename TOrientedFluxImage,
 	typename TScaleImage,
-	typename THessianToMeasureFilter,
+	typename TOrientedFluxToMeasureFilter,
 	typename TOutputNDImage>
-	typename MultiScaleOrientedFluxBasedMeasureImageFilter
-	<TInputImage,THessianImage,TScaleImage,THessianToMeasureFilter,TOutputNDImage>::ScaleImageType * 
-	MultiScaleOrientedFluxBasedMeasureImageFilter
-	<TInputImage,THessianImage,TScaleImage,THessianToMeasureFilter,TOutputNDImage>
+	typename MultiScaleTubularityMeasureImageFilter
+	<TInputImage,TOrientedFluxImage,TScaleImage,TOrientedFluxToMeasureFilter,TOutputNDImage>::ScaleImageType * 
+	MultiScaleTubularityMeasureImageFilter
+	<TInputImage,TOrientedFluxImage,TScaleImage,TOrientedFluxToMeasureFilter,TOutputNDImage>
 	::GetScaleOutput()
 	{
 		return static_cast<ScaleImageType*>(this->ProcessObject::GetOutput(1));
 	}
 	
 	template 	<typename TInputImage,
-	typename THessianImage,
+	typename TOrientedFluxImage,
 	typename TScaleImage,
-	typename THessianToMeasureFilter,
+	typename TOrientedFluxToMeasureFilter,
 	typename TOutputNDImage>
 	void
-	MultiScaleOrientedFluxBasedMeasureImageFilter
-	<TInputImage,THessianImage,TScaleImage,THessianToMeasureFilter,TOutputNDImage>
+	MultiScaleTubularityMeasureImageFilter
+	<TInputImage,TOrientedFluxImage,TScaleImage,TOrientedFluxToMeasureFilter,TOutputNDImage>
 	::PrintSelf(std::ostream& os, Indent indent) const
 	{
 		Superclass::PrintSelf(os, indent);
@@ -691,9 +681,9 @@ namespace itk
 		os << indent << "NumberOfSigmaSteps:  " << m_NumberOfSigmaSteps  << std::endl;
 		os << indent << "BrightObject: " << m_BrightObject << std::endl;
 		os << indent << "GenerateScaleOutput: " << m_GenerateScaleOutput << std::endl;
-		os << indent << "GenerateHessianOutput: " << m_GenerateHessianOutput << std::endl;
-		os << indent << "GenerateNPlus1DHessianMeasureOutput: " << m_GenerateNPlus1DHessianMeasureOutput << std::endl;
-		os << indent << "GenerateNPlus1DHessianOutput: " << m_GenerateNPlus1DHessianOutput << std::endl;
+		os << indent << "GenerateOrientedFluxOutput: " << m_GenerateOrientedFluxOutput << std::endl;
+		os << indent << "GenerateNPlus1DOrientedFluxMeasureOutput: " << m_GenerateNPlus1DOrientedFluxMeasureOutput << std::endl;
+		os << indent << "GenerateNPlus1DOrientedFluxOutput: " << m_GenerateNPlus1DOrientedFluxOutput << std::endl;
 	}
 	
 	

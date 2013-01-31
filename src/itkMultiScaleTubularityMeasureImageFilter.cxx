@@ -21,7 +21,7 @@
 #pragma warning ( disable : 4786 )
 #endif
 
-#include "itkMultiScaleOrientedFluxBasedMeasureImageFilter.h"
+#include "itkMultiScaleTubularityMeasureImageFilter.h"
 #include "itkMinimumMaximumImageCalculator.h"
 #include "itkShiftScaleImageFilter.h"
 #include "itkImageFileReader.h"
@@ -198,53 +198,54 @@ int Execute(int argc, char* argv[])
 	const unsigned int Dimension = VDimension;
 	
 	// Typedefs
-	typedef TInputPixel																			InputPixelType;
-	typedef itk::Image<InputPixelType,Dimension>						InputImageType;
+	typedef TInputPixel																					InputPixelType;
+	typedef itk::Image<InputPixelType,Dimension>								InputImageType;
 	
 	
-	typedef float																						OutputPixelType;
-	typedef itk::Image<OutputPixelType,Dimension>						OutputImageType;
-	typedef itk::Image<OutputPixelType,Dimension+1>					OutputScaleSpaceImageType;
+	typedef float																								OutputPixelType;
+	typedef itk::Image<OutputPixelType,Dimension>								OutputImageType;
+	typedef itk::Image<OutputPixelType,Dimension+1>							OutputScaleSpaceImageType;
 
 	
-	typedef itk::ImageFileReader<InputImageType>						FileReaderType;
-	typedef itk::ImageFileWriter<OutputImageType>						FileWriterType;
-	typedef itk::ImageFileWriter<OutputScaleSpaceImageType> ScaleSpaceImageFileWriterType;
+	typedef itk::ImageFileReader<InputImageType>								FileReaderType;
+	typedef itk::ImageFileWriter<OutputImageType>								FileWriterType;
+	typedef itk::ImageFileWriter<OutputScaleSpaceImageType> 		ScaleSpaceImageFileWriterType;
 	
-	typedef float																						OrientedFluxPixelScalarType;
-	typedef itk::SymmetricSecondRankTensor< OrientedFluxPixelScalarType, Dimension > OrientedFluxPixelType;
+	typedef float																								OFPixelScalarType;
+	typedef itk::SymmetricSecondRankTensor< 
+	OFPixelScalarType, Dimension >															OFPixelType;
 	
-	OrientedFluxPixelType examplePixel;
+	typedef itk::Image< OFPixelType, Dimension >								OFImageType;
+	typedef itk::Image< OFPixelType, Dimension+1 >							NPlus1DOFImageType;	
 	
-	typedef itk::Image< OrientedFluxPixelType, Dimension >				OrientedFluxImageType;
-	typedef itk::Image< OrientedFluxPixelType, Dimension+1 >			NPlus1DOrientedFluxImageType;	
+	typedef float																								ScalePixelType;
+	typedef itk::Image<ScalePixelType, Dimension>								ScaleImageType;
 	
-	typedef float																						ScalePixelType;
-	typedef itk::Image<ScalePixelType, Dimension>						ScaleImageType;
+	typedef itk::ImageFileWriter<OFImageType>										OFFileWriterType;
+	typedef itk::ImageFileWriter<NPlus1DOFImageType>						NPlus1DOFFileWriterType;	
+	typedef itk::ImageFileWriter<ScaleImageType>								ScaleFileWriterType;
 	
-	typedef itk::ImageFileWriter<OrientedFluxImageType>					OrientedFluxFileWriterType;
-	typedef itk::ImageFileWriter<NPlus1DOrientedFluxImageType>		NPlus1DOrientedFluxFileWriterType;	
-	typedef itk::ImageFileWriter<ScaleImageType>						ScaleFileWriterType;
+	typedef itk::ShiftScaleImageFilter
+	<OutputImageType, OutputImageType>													ShiftScaleFilterType;
+	typedef itk::MinimumMaximumImageCalculator<OutputImageType>	MinMaxCalculatorType;
+	typedef itk::ShiftScaleImageFilter
+	<OutputScaleSpaceImageType, OutputScaleSpaceImageType>			ShiftScaleFilterForScaleSpaceImageType;
+	typedef itk::MinimumMaximumImageCalculator
+	<OutputScaleSpaceImageType>																	MinMaxCalculatorForScaleSpaceImageType;
+	typedef itk::ExpImageFilter
+	<OutputImageType, OutputImageType>													ExpFilterType;
+	typedef itk::ExpImageFilter
+	<OutputScaleSpaceImageType, OutputScaleSpaceImageType>			ScaleSpaceExpFilterType;
 	
-	typedef itk::ShiftScaleImageFilter<OutputImageType, OutputImageType>	ShiftScaleFilterType;
-	typedef itk::MinimumMaximumImageCalculator<OutputImageType>						MinMaxCalculatorType;
-	typedef itk::ShiftScaleImageFilter<OutputScaleSpaceImageType, OutputScaleSpaceImageType>	ShiftScaleFilterForScaleSpaceImageType;
-	typedef itk::MinimumMaximumImageCalculator<OutputScaleSpaceImageType>											MinMaxCalculatorForScaleSpaceImageType;
-	typedef itk::ExpImageFilter<OutputImageType, OutputImageType> ExpFilterType;
-	typedef itk::ExpImageFilter<OutputScaleSpaceImageType, OutputScaleSpaceImageType> ScaleSpaceExpFilterType;
+	typedef itk::OrientedFluxCrossSectionTraceMeasureFilter
+	<OFImageType, OutputImageType >															OFCrossSectionTraceObjectnessFilterType;
 	
-	
-	
-	typedef itk::OrientedFluxCrossSectionTraceMeasureFilter< OrientedFluxImageType,OutputImageType > OrientedFluxCrossSectionTraceObjectnessFilterType;	
-	
-	// Declare the type of multiscale enhancement filter
-	typedef itk::ProcessObject MultiScaleEnhancementBaseFilterType;
-	
-	typedef itk::MultiScaleOrientedFluxBasedMeasureImageFilter< InputImageType, 
-	OrientedFluxImageType, 
+	typedef itk::MultiScaleTubularityMeasureImageFilter
+	<InputImageType, 
+	OFImageType, 
 	ScaleImageType,
-	OrientedFluxCrossSectionTraceObjectnessFilterType, 
-	OutputImageType > OrientedFluxCrossSectionTraceMultiScaleEnhancementFilterType;	
+	OFCrossSectionTraceObjectnessFilterType, 
+	OutputImageType >																						OFCrossSectionTraceMultiScaleFilterType;	
 	
 	// Parse the input arguments.
 	unsigned int argumentOffset = 1;
@@ -252,16 +253,16 @@ int Execute(int argc, char* argv[])
 	std::string outputTubularityScoreImageFilePath = argv[argumentOffset++];
 	bool generateScaleSpaceTubularityScoreImage = (bool)atoi(argv[argumentOffset++]);
 	std::string outputScaleSpaceTubularityScoreImageFilePath = argv[argumentOffset++];
-	bool generateOrientedFluxMatrixImage = (bool)atoi(argv[argumentOffset++]);
-	std::string outputOrientedFluxMatrixImageFilePath = argv[argumentOffset++];
-	bool generateNPlus1DOrientedFluxMatrixImage = (bool)atoi(argv[argumentOffset++]);
-	std::string outputNPlus1DOrientedFluxMatrixImageFilePath = argv[argumentOffset++];
+	bool generateOFMatrixImage = (bool)atoi(argv[argumentOffset++]);
+	std::string outputOFMatrixImageFilePath = argv[argumentOffset++];
+	bool generateNPlus1DOFMatrixImage = (bool)atoi(argv[argumentOffset++]);
+	std::string outputNPlus1DOFMatrixImageFilePath = argv[argumentOffset++];
 	bool generateScaleImage = (bool)atoi(argv[argumentOffset++]);
 	std::string outputScaleImageFilePath = argv[argumentOffset++];
 	double sigmaMin = atof(argv[argumentOffset++]);
 	double sigmaMax = atof(argv[argumentOffset++]);
 	unsigned int numberOfScales = atof(argv[argumentOffset++]);
-	double	fixedSigmaForHessianComputation = atof(argv[argumentOffset++]);
+	double	fixedSigmaForOrientedFluxComputation = atof(argv[argumentOffset++]);
 	bool brightObject = (bool)atoi(argv[argumentOffset++]);
 	bool takeExponentialOfScoreImage = (bool)atoi(argv[argumentOffset++]);
 	double maxContrastRatio = 10;
@@ -286,29 +287,29 @@ int Execute(int argc, char* argv[])
 	inputImage->DisconnectPipeline();
 		
 	
-	typename OrientedFluxCrossSectionTraceMultiScaleEnhancementFilterType::Pointer orientedFluxCrossSectionTraceMultiScaleEnhancementFilter = 
-	OrientedFluxCrossSectionTraceMultiScaleEnhancementFilterType::New();
-	orientedFluxCrossSectionTraceMultiScaleEnhancementFilter->SetBrightObject( brightObject );
+	typename OFCrossSectionTraceMultiScaleFilterType::Pointer ofMultiScaleFilter = 
+	OFCrossSectionTraceMultiScaleFilterType::New();
+	ofMultiScaleFilter->SetBrightObject( brightObject );
 	
 	
 	// Check the validity of some of the parameters.
 	
-	orientedFluxCrossSectionTraceMultiScaleEnhancementFilter->SetInput(inputImage);
+	ofMultiScaleFilter->SetInput(inputImage);
 	
-	orientedFluxCrossSectionTraceMultiScaleEnhancementFilter->SetSigmaMinimum( sigmaMin ); 
-	orientedFluxCrossSectionTraceMultiScaleEnhancementFilter->SetSigmaMaximum( sigmaMax );  
-	orientedFluxCrossSectionTraceMultiScaleEnhancementFilter->SetNumberOfSigmaSteps( numberOfScales );
-	orientedFluxCrossSectionTraceMultiScaleEnhancementFilter->SetFixedSigmaForHessianImage( fixedSigmaForHessianComputation );
-	orientedFluxCrossSectionTraceMultiScaleEnhancementFilter->SetGenerateScaleOutput( generateScaleImage );
-	orientedFluxCrossSectionTraceMultiScaleEnhancementFilter->SetGenerateHessianOutput( generateOrientedFluxMatrixImage );
-	orientedFluxCrossSectionTraceMultiScaleEnhancementFilter->SetGenerateNPlus1DHessianOutput( generateNPlus1DOrientedFluxMatrixImage );
-	orientedFluxCrossSectionTraceMultiScaleEnhancementFilter->SetGenerateNPlus1DHessianMeasureOutput( generateScaleSpaceTubularityScoreImage );
+	ofMultiScaleFilter->SetSigmaMinimum( sigmaMin ); 
+	ofMultiScaleFilter->SetSigmaMaximum( sigmaMax );  
+	ofMultiScaleFilter->SetNumberOfSigmaSteps( numberOfScales );
+	ofMultiScaleFilter->SetFixedSigmaForOrientedFluxImage( fixedSigmaForOrientedFluxComputation );
+	ofMultiScaleFilter->SetGenerateScaleOutput( generateScaleImage );
+	ofMultiScaleFilter->SetGenerateOrientedFluxOutput( generateOFMatrixImage );
+	ofMultiScaleFilter->SetGenerateNPlus1DOrientedFluxOutput( generateNPlus1DOFMatrixImage );
+	ofMultiScaleFilter->SetGenerateNPlus1DOrientedFluxMeasureOutput( generateScaleSpaceTubularityScoreImage );
 	
 	try
 	{
 		itk::TimeProbe timer;
 		timer.Start();
-		orientedFluxCrossSectionTraceMultiScaleEnhancementFilter->Update();
+		ofMultiScaleFilter->Update();
 		timer.Stop();
 		std::cout << "Total Computation time is " << timer.GetMean() << std::endl;
 	}
@@ -327,7 +328,7 @@ int Execute(int argc, char* argv[])
 		{
 			typename MinMaxCalculatorForScaleSpaceImageType::Pointer minMaxCalc =
 			MinMaxCalculatorForScaleSpaceImageType::New();
-			minMaxCalc->SetImage( orientedFluxCrossSectionTraceMultiScaleEnhancementFilter->GetNPlus1DImageOutput() );
+			minMaxCalc->SetImage( ofMultiScaleFilter->GetNPlus1DImageOutput() );
 			minMaxCalc->Compute();
 			maxTubularityValue = minMaxCalc->GetMaximum();
 			minTubularityValue = minMaxCalc->GetMinimum();
@@ -351,7 +352,7 @@ int Execute(int argc, char* argv[])
 			// Carry out the exponential mapping.
 			//std::cout << "Carrying out the exponential normalization of the score image." << std::endl;	
 			typename ShiftScaleFilterForScaleSpaceImageType::Pointer shiftScaleFilter = ShiftScaleFilterForScaleSpaceImageType::New();
-			shiftScaleFilter->SetInput( orientedFluxCrossSectionTraceMultiScaleEnhancementFilter->GetNPlus1DImageOutput() );
+			shiftScaleFilter->SetInput( ofMultiScaleFilter->GetNPlus1DImageOutput() );
 			shiftScaleFilter->SetShift( 0.0 );
 			shiftScaleFilter->SetScale( expFactor );
 			
@@ -363,7 +364,7 @@ int Execute(int argc, char* argv[])
 		}
 		else
 		{
-			scaleSpaceTubularityScoreImage = orientedFluxCrossSectionTraceMultiScaleEnhancementFilter->GetNPlus1DImageOutput();
+			scaleSpaceTubularityScoreImage = ofMultiScaleFilter->GetNPlus1DImageOutput();
 		}
 		
 		typename ScaleSpaceImageFileWriterType::Pointer scaleSpaceWriter = ScaleSpaceImageFileWriterType::New();
@@ -393,7 +394,7 @@ int Execute(int argc, char* argv[])
 		{
 			typename MinMaxCalculatorForScaleSpaceImageType::Pointer minMaxCalc =
 			MinMaxCalculatorForScaleSpaceImageType::New();
-			minMaxCalc->SetImage( orientedFluxCrossSectionTraceMultiScaleEnhancementFilter->GetNPlus1DImageOutput() );
+			minMaxCalc->SetImage( ofMultiScaleFilter->GetNPlus1DImageOutput() );
 			minMaxCalc->Compute();
 			maxTubularityValue = minMaxCalc->GetMaximum();
 			minTubularityValue = minMaxCalc->GetMinimum();
@@ -409,7 +410,7 @@ int Execute(int argc, char* argv[])
 			static_cast<double>(minMaxCalc->GetMaximum() - minMaxCalc->GetMinimum());	
 		}
 		typename ShiftScaleFilterType::Pointer shiftScaleFilter = ShiftScaleFilterType::New();
-		shiftScaleFilter->SetInput( orientedFluxCrossSectionTraceMultiScaleEnhancementFilter->GetOutput() );
+		shiftScaleFilter->SetInput( ofMultiScaleFilter->GetOutput() );
 		shiftScaleFilter->SetShift( 0.0 );
 		shiftScaleFilter->SetScale( expFactor );
 		
@@ -420,7 +421,7 @@ int Execute(int argc, char* argv[])
 	}
 	else
 	{
-		tubularityScoreImage = orientedFluxCrossSectionTraceMultiScaleEnhancementFilter->GetOutput();
+		tubularityScoreImage = ofMultiScaleFilter->GetOutput();
 	}
 	
 	typename FileWriterType::Pointer writer = FileWriterType::New();
@@ -438,16 +439,15 @@ int Execute(int argc, char* argv[])
 	
 	
 	// Writing the OrientedFlux matrix image.
-	if( generateOrientedFluxMatrixImage )
+	if( generateOFMatrixImage )
 	{
-		typename OrientedFluxFileWriterType::Pointer OrientedFluxWriter = OrientedFluxFileWriterType::New();									  
-		std::cout << "generateOrientedFluxMatrixImage" << std::endl;
-		OrientedFluxWriter->SetInput( orientedFluxCrossSectionTraceMultiScaleEnhancementFilter->GetHessianOutput() );
-		OrientedFluxWriter->SetFileName( outputOrientedFluxMatrixImageFilePath );
+		typename OFFileWriterType::Pointer oFluxWriter = OFFileWriterType::New();
+		oFluxWriter->SetInput( ofMultiScaleFilter->GetOrientedFluxOutput() );
+		oFluxWriter->SetFileName( outputOFMatrixImageFilePath );
 		
 		try
 		{
-			OrientedFluxWriter->Update();
+			oFluxWriter->Update();
 		}
 		catch (itk::ExceptionObject &e)
 		{
@@ -455,16 +455,16 @@ int Execute(int argc, char* argv[])
 		}
 	}
 	
-	if( generateNPlus1DOrientedFluxMatrixImage )
+	if( generateNPlus1DOFMatrixImage )
 	{
-		typename NPlus1DOrientedFluxFileWriterType::Pointer OrientedFluxWriter 
-		= NPlus1DOrientedFluxFileWriterType::New();									  
-		OrientedFluxWriter->SetFileName( outputNPlus1DOrientedFluxMatrixImageFilePath );
-		OrientedFluxWriter->SetInput( orientedFluxCrossSectionTraceMultiScaleEnhancementFilter->GetNPlus1DHessianOutput() );
+		typename NPlus1DOFFileWriterType::Pointer oFluxWriter 
+		= NPlus1DOFFileWriterType::New();									  
+		oFluxWriter->SetFileName( outputNPlus1DOFMatrixImageFilePath );
+		oFluxWriter->SetInput( ofMultiScaleFilter->GetNPlus1DOrientedFluxOutput() );
 		
 		try
 		{
-			OrientedFluxWriter->Update();
+			oFluxWriter->Update();
 		}
 		catch (itk::ExceptionObject &e)
 		{
@@ -477,7 +477,7 @@ int Execute(int argc, char* argv[])
 	{
 		typename ScaleFileWriterType::Pointer scaleWriter = ScaleFileWriterType::New();									  
 		scaleWriter->SetFileName( outputScaleImageFilePath );
-		scaleWriter->SetInput( orientedFluxCrossSectionTraceMultiScaleEnhancementFilter->GetScaleOutput() );
+		scaleWriter->SetInput( ofMultiScaleFilter->GetScaleOutput() );
 		
 		try
 		{

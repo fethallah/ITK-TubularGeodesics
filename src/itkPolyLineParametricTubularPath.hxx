@@ -822,6 +822,337 @@ namespace itk
 	}
 	
 	template <unsigned int VDimension>
+	typename PolyLineParametricTubularPath<VDimension>::NMinus1DPathType::Pointer 
+	PolyLineParametricTubularPath<VDimension>::	
+	ConvertToNMinus1DPath(double radiusOrigin, double radiusSpacing) const
+	{
+		typename NMinus1DPathType::Pointer nMinus1DPath = NMinus1DPathType::New();
+		nMinus1DPath->Initialize();
+		
+		const VertexListType* nDVertexList = this->GetVertexList();
+		
+		for(typename VertexListType::ElementIdentifier i = 0; 
+				i < nDVertexList->Size(); 
+				i++ )
+		{
+			typename NMinus1DPathType::VertexType vertex;
+			VertexType nDVertex = nDVertexList->ElementAt(i);
+			for(unsigned int j = 0; 
+					j < NMinus1DPathType::Dimension; 
+					j++ )
+			{
+				vertex[j] = nDVertex[j];
+			}
+			
+			// Compute the point radius in world coordinates. 
+			typename NMinus1DPathType::RadiusType radius = 
+			nDVertex[Dimension-1] * radiusSpacing + radiusOrigin;
+			
+			// Add the (N-1)-D vertex with the Nth element treated 
+			// as the index along the radius dimension.
+			nMinus1DPath->AddVertex( vertex, radius );
+		}
+		
+		return nMinus1DPath;
+	}
+	
+	
+	template <unsigned int VDimension>
+	typename PolyLineParametricTubularPath<VDimension>::NPlus1DPathType::Pointer 
+	PolyLineParametricTubularPath<VDimension>::	
+	ConvertToNPlus1DPath(double radiusOrigin, double radiusSpacing) const
+	{
+		typename NPlus1DPathType::Pointer nPlus1DPath = NPlus1DPathType::New();
+		nPlus1DPath->Initialize();
+		
+		const VertexListType* nDVertexList = this->GetVertexList();
+		const RadiusListType& nDRadiusList = this->GetRadiusList();
+		
+		for(typename VertexListType::ElementIdentifier i = 0; 
+				i < nDVertexList->Size(); 
+				i++ )
+		{
+			typename NPlus1DPathType::VertexType vertex;
+			VertexType nDVertex = nDVertexList->ElementAt(i);
+			for(unsigned int j = 0; 
+					j < Dimension; 
+					j++ )
+			{
+				vertex[j] = nDVertex[j];
+			}
+			
+			// Compute the point radius index in image coordinates. 
+			vertex[NPlus1DPathType::Dimension-1] = (nDRadiusList[i] - radiusOrigin) / radiusSpacing;
+			
+			nPlus1DPath->AddVertex( vertex, nDRadiusList[i] );	// keep the original radius value.
+		}
+		
+		return nPlus1DPath;
+	}
+	
+	
+	template <unsigned int VDimension>
+	template<class TImage>
+	void
+	PolyLineParametricTubularPath<VDimension>::
+	WriteSwcFile(const std::string& fileName,
+							 const TImage* image,
+							 bool pointsInWorldCoords,
+							 const std::string& comments) const
+	{
+		std::streamsize									precision = 10;
+		
+		// Write the file.
+		std::ofstream ofs( fileName.c_str() );
+		if( ofs.fail() )
+		{
+			ofs.close();
+			itkExceptionMacro(<<"The file \'" << fileName 
+												<< "\' could not be opened for writing.");
+		}
+		
+		// Check the vertex dimension.
+		if( Dimension > 3 )
+		{
+			itkWarningMacro(<<"The dimension: " << Dimension 
+											<< " of the input path is greater than the maximum "
+											<< "allowed dimension 3 for swc files. Only the first "
+											<< "3 coordinate values of each path point will be written.");
+		}
+		
+		// Set the precision
+		ofs.precision(precision);
+		
+		// First, write the comment string if it is not empty.
+		if( !comments.empty() )
+		{
+			std::istringstream ss( comments );
+			std::string line;
+			while( std::getline( ss, line ) ) 
+			{
+				ofs << "#";
+				ofs << line;
+				ofs << std::endl;
+			}
+		}
+		
+		// Traverse the point list of the path.
+		long vertexID = 1;		// vertex IDs start from 1.
+		unsigned int count = GetVertexList()->Size();
+		for(unsigned int i = 0; i < count; i++)
+		{
+			VertexType index = GetVertex(i);
+			RadiusType radi = GetVertexRadius(i);
+			unsigned int idx;
+			
+			if( pointsInWorldCoords )
+			{	
+				PointType point;
+				image->TransformContinuousIndexToPhysicalPoint(index, point);
+				for(idx = 0; idx < Dimension; idx++)
+				{
+					index[idx] = point[idx];
+				}
+			}
+			else
+			{
+				radi /= image->GetSpacing()[0];  // use the first dimension to convert the radius 
+				// value from the world coordinates to the 
+				// image coordinates.			
+			}
+			
+			// Write the point.
+			ofs << vertexID << " ";
+			ofs << 0 << " ";					// point type
+			
+			for(idx = 0; 
+					idx < std::min(static_cast<unsigned int>(Dimension), 
+												 static_cast<unsigned int>(3)); 
+					idx++)
+			{
+				ofs << index[idx] << " ";
+			}
+			for(; idx < 3; idx++)
+			{
+				ofs << 0 << " ";
+			}
+			ofs << radi << " ";
+			
+			// Write the parent id.
+			long parentID;
+			if( vertexID == 1 )
+			{
+				parentID = -1;
+			}
+			else
+			{
+				parentID = vertexID - 1;
+			}
+			
+			ofs << parentID;
+			
+			// increase the vertex id.
+			vertexID++;
+			
+			ofs << std::endl;
+		}
+		
+		ofs.close();
+		if( ofs.fail() )
+		{
+			itkExceptionMacro(<<"An error has occurred during writing the file \'"
+												<< fileName << "\' .");
+		}
+	}
+	
+	
+	template <unsigned int VDimension>
+	template<class TImage>
+	std::string
+	PolyLineParametricTubularPath<VDimension>::
+	ReadSwcFile(const std::string& fileName,
+							const TImage* image,
+							bool pointsInWorldCoords)
+	{
+		// Write the file.
+		std::ifstream ifs( fileName.c_str() );
+		if( ifs.fail() )
+		{
+			ifs.close();
+			itkExceptionMacro(<<"The file \'" << fileName 
+												<< "\' could not be opened for reading.");
+		}
+		
+		// Check the vertex dimension.
+		if( Dimension > 3 )
+		{
+			itkWarningMacro(<<"The dimension: " << Dimension 
+											<< " of the input path is greater than the maximum "
+											<< "allowed dimension 3 for swc files. Only the first "
+											<< "3 coordinate values of each path point will be read.");
+		} 
+		
+		// Clear the vertex and the radius lists.
+		Initialize();
+		
+		std::string comments;
+		
+		std::map<long, bool> childMap;
+		
+		while( ifs.good() )
+		{
+			// If this is not the first point, ignore the rest of the line 
+			// before reading the next character.
+			if( m_VertexList->Size() > 0 )
+			{
+				ifs.ignore(INT_MAX, '\n');
+			}
+			
+			if( !ifs.good() )
+			{
+				break;
+			}
+			
+			// Ignore multiple lines starting with a comment character.
+			int nCommentChar;
+			do
+			{
+				nCommentChar = ifs.get();
+				if( !ifs.good() )
+				{
+					break;
+				}
+				
+				ifs.unget();
+				
+				if( nCommentChar == ((int)'#') )
+				{
+					ifs.get(); // read the comment char.
+					std::string line;
+					std::getline(ifs,line); // get the rest of the line.
+					
+					// Add the line to the comment string.
+					if( !comments.empty() )
+					{
+						comments += '\n';
+					}
+					comments += line;
+				}
+			}
+			while( nCommentChar == ((int)'#') );
+			
+			if( !ifs.good() )
+			{
+				break;
+			}
+			
+			VertexType index;
+			double dummy;
+			int dummy2;
+			long vertexID;
+			long parentID;
+			double radius;
+			unsigned int idx;
+			
+			ifs >> vertexID;
+			ifs >> dummy2;
+			for(idx = 0; 
+					idx < std::min(static_cast<unsigned int>(Dimension), 
+												 static_cast<unsigned int>(3)); 
+					idx++)
+			{
+				ifs >> index[idx];
+			}
+			for(; idx < 3; idx++)
+			{
+				ifs >> dummy;
+			}
+			ifs >> radius;				
+			ifs >> parentID;
+			
+			// Stop reading if we come accross a bifurcation.
+			if( childMap.find(parentID) == childMap.end() )
+			{
+				childMap[parentID] = true;
+			}
+			else
+			{
+				break;
+			}
+			
+			// Convert the point to continuous index if the points in the file 
+			// are given in world coordinates. Otherwise, if they are in image 
+			// coordinates, then convert the radius values to world coordinates.
+			if( pointsInWorldCoords )
+			{			
+				PointType worldPoint;
+				for(idx = 0; idx < Dimension; idx++)
+				{
+					worldPoint[idx] = index[idx];
+				}
+				image->TransformPhysicalPointToContinuousIndex(worldPoint, index);
+			}
+			else
+			{
+				radius *= image->GetSpacing()[0]; // use the first coordinate for radius conversion.
+			}
+			
+			// Finally add the point to the path.
+			AddVertex(index, radius);	
+		}
+		
+		ifs.close();
+		if( !ifs.eof() )
+		{
+			itkExceptionMacro(<<"An error has occured during reading the file \'"
+												<< fileName << "\' .");
+		}
+		
+		return comments;
+	}
+	
+	
+	template <unsigned int VDimension>
 	typename PolyLineParametricTubularPath<VDimension>::VertexType
 	PolyLineParametricTubularPath<VDimension>
 	::GetVertex(typename VertexListType::ElementIdentifier vertexIndex) const
