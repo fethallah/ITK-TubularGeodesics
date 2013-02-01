@@ -1,5 +1,4 @@
 cmake_minimum_required(VERSION 2.8)
-#itk_minimum_required(VERSION 4.3) TODO
 #Change PROJECT_NAME to the name of your project
 PROJECT(TubularGeodesic)
 

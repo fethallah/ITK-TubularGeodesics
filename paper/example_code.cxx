@@ -92,4 +92,5 @@ tubularPath->Resample(0.5, inputImage.GetPointer());
 tubularPath->SmoothVertexLocationsAndRadii(1.0, inputImage.GetPointer());
 
 // Write the path to the specified swc file in world coordinates.
+std::string outputSWCFile = ...
 tubularPath->WriteSwcFile(outputSWCFile, inputImage.GetPointer(), true);
