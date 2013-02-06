@@ -21,6 +21,7 @@
 #include "itkOrientedFluxMatrixImageFilter.h"
 #include "itkCastImageFilter.h"
 #include "itkExtractImageFilter.h"
+#include "itkMath.h"
 #include "vnl/vnl_bessel.h"
 
 namespace itk
@@ -414,7 +415,7 @@ namespace itk
 		InputSizeType inputSize = inputImage->GetLargestPossibleRegion().GetSize();
 		//RealType radius   = this->GetRadius();
 		double minSpacing = inputImage->GetSpacing().GetVnlVector().min_value();
-		unsigned int halfWindowSize = round(m_Radius/minSpacing) + 1;
+		unsigned int halfWindowSize = itk::Math::Round<unsigned int>(m_Radius/minSpacing) + 1;
 		InputSizeType kernelSize;
 		kernelSize.Fill( 2*halfWindowSize + 1 );
 		InputSizeType padSize;

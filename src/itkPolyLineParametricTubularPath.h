@@ -65,7 +65,7 @@ namespace itk
 		typedef typename Superclass::OutputType OutputType;
 		
 		/** Higher and lower dimensional path types. */
-		typedef PolyLineParametricTubularPath<(Dimension > 0) ? Dimension-1 : Dimension> NMinus1DPathType;
+		typedef PolyLineParametricTubularPath<(Dimension > 1) ? Dimension-1 : Dimension> NMinus1DPathType;
 		typedef PolyLineParametricTubularPath<(Dimension < 5) ? Dimension+1 : Dimension> NPlus1DPathType;
 		
 		/** Basic data-structure types used */

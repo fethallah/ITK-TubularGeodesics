@@ -19,6 +19,7 @@
 
 #include <itkImageToImageFilter.h>
 #include <itkImage.h>
+#include <itkImageBase.h>
 #include <itkOrientedFluxMatrixImageFilter.h>
 #include <itkTimeProbe.h>
 
