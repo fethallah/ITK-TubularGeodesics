@@ -59,39 +59,39 @@ namespace itk
 	template <typename TInputImage, 
 	typename TOutputImage= Image< SymmetricSecondRankTensor< 
   typename NumericTraits< typename TInputImage::PixelType>::RealType,
-  ::itk::GetImageDimension<TInputImage>::ImageDimension >,
-	::itk::GetImageDimension<TInputImage>::ImageDimension > >
+  TInputImage::ImageDimension >,
+  TInputImage::ImageDimension > >
 	class ITK_EXPORT OrientedFluxMatrixImageFilter:
 	public ImageToImageFilter<TInputImage,TOutputImage>
 	{
 	public:
 		/** Standard class typedefs. */
 		typedef OrientedFluxMatrixImageFilter															Self;
-		typedef ImageToImageFilter<TInputImage,TOutputImage>							Superclass;
-		typedef SmartPointer<Self>																				Pointer;
-		typedef SmartPointer<const Self>																	ConstPointer;
+		typedef ImageToImageFilter<TInputImage,TOutputImage>                                            Superclass;
+		typedef SmartPointer<Self>																		Pointer;
+		typedef SmartPointer<const Self>																ConstPointer;
 		
 		/** Pixel Type of the input image */
-		typedef TInputImage																								InputImageType;
-		typedef typename InputImageType::Pointer													InputImagePointer;
-		typedef typename InputImageType::ConstPointer											InputImageConstPointer;
-		typedef typename InputImageType::PixelType												PixelType;
-		typedef typename NumericTraits<PixelType>::RealType								RealType;
-		typedef typename InputImageType::SizeType													InputSizeType;
-		typedef typename InputImageType::RegionType												InputRegionType;
-		typedef typename InputImageType::SpacingType											SpacingType;
-		typedef typename InputImageType::IndexType												IndexType;
-		typedef typename InputImageType::RegionType												RegionType;
-		typedef typename InputImageType::SizeType													SizeType;
-		typedef typename InputImageType::PointType												PointType;
+		typedef TInputImage																				InputImageType;
+		typedef typename InputImageType::Pointer                                                        InputImagePointer;
+		typedef typename InputImageType::ConstPointer                                                   InputImageConstPointer;
+		typedef typename InputImageType::PixelType                                                      PixelType;
+		typedef typename NumericTraits<PixelType>::RealType                                             RealType;
+		typedef typename InputImageType::SizeType                                                       InputSizeType;
+		typedef typename InputImageType::RegionType                                                     InputRegionType;
+		typedef typename InputImageType::SpacingType                                                    SpacingType;
+		typedef typename InputImageType::IndexType                                                      IndexType;
+		typedef typename InputImageType::RegionType                                                     RegionType;
+		typedef typename InputImageType::SizeType														SizeType;
+		typedef typename InputImageType::PointType                                                      PointType;
 
 		/** Internal types used by the FFT filters. */
-		typedef float																											InternalPrecision;
-		typedef Image< InternalPrecision, TInputImage::ImageDimension >   InternalImageType;
-		typedef typename InternalImageType::Pointer                       InternalImagePointerType;
-		typedef std::complex< InternalPrecision >                         InternalComplexType;
-		typedef Image< InternalComplexType, TInputImage::ImageDimension > InternalComplexImageType;
-		typedef typename InternalComplexImageType::Pointer                InternalComplexImagePointerType;
+		typedef float																					InternalPrecision;
+		typedef Image< InternalPrecision, TInputImage::ImageDimension >                                 InternalImageType;
+		typedef typename InternalImageType::Pointer                                                     InternalImagePointerType;
+		typedef std::complex< InternalPrecision >                                                       InternalComplexType;
+		typedef Image< InternalComplexType, TInputImage::ImageDimension >                               InternalComplexImageType;
+		typedef typename InternalComplexImageType::Pointer                                              InternalComplexImagePointerType;
 		
 		
 		/** Typedef to describe the boundary condition. */
@@ -126,8 +126,7 @@ namespace itk
 		itkGetConstMacro(BoundaryCondition, BoundaryConditionPointerType);
 
 		/** Image dimension. */
-		itkStaticConstMacro(ImageDimension, unsigned int,
-												::itk::GetImageDimension<TInputImage>::ImageDimension);
+		itkStaticConstMacro(ImageDimension, unsigned int, TInputImage::ImageDimension);
 		
 		/** Run-time type information (and related methods).   */
 		itkTypeMacro( OrientedFluxMatrixImageFilter, ImageToImageFilter );

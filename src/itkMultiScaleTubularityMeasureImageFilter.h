@@ -68,7 +68,7 @@ namespace itk
 	typename TScaleImage,
 	typename TOrientedFluxToMeasureFilter,
 	typename TOutputNDImage = Image<typename NumericTraits<typename TInputImage::PixelType>::ScalarRealType, 
-	::itk::GetImageDimension<TInputImage>::ImageDimension> >
+	TInputImage::ImageDimension> >
 	class ITK_EXPORT MultiScaleTubularityMeasureImageFilter 
 	: public ImageToImageFilter< TInputImage, TOutputNDImage > 
 	{
@@ -90,9 +90,9 @@ namespace itk
 		typedef TOrientedFluxToMeasureFilter																			OrientedFluxToMeasureFilterType;
 		
 		typedef Image<typename OrientedFluxImageType::PixelType, 
-		::itk::GetImageDimension<OrientedFluxImageType>::ImageDimension + 1>			NPlus1DOrientedFluxImageType;
+		OrientedFluxImageType::ImageDimension + 1>			NPlus1DOrientedFluxImageType;
 		typedef	Image<typename OutputNDImageType::PixelType, 
-		::itk::GetImageDimension<OutputNDImageType>::ImageDimension + 1>					OutputNPlus1DImageType;
+		OutputNDImageType::ImageDimension + 1>					OutputNPlus1DImageType;
 		
 		typedef typename TInputImage::PixelType																		InputPixelType;
 		typedef typename TInputImage::RegionType																	InputRegionType;
@@ -105,7 +105,7 @@ namespace itk
 		
 		/** Image dimension. */
 		itkStaticConstMacro(ImageDimension, unsigned int, 
-												::itk::GetImageDimension<InputImageType>::ImageDimension);
+												InputImageType::ImageDimension);
 		
 		/** Types for Scale image */
 		typedef typename ScaleImageType::PixelType																ScalePixelType;
@@ -315,16 +315,16 @@ namespace itk
 		/** Begin concept checking */
 		itkConceptMacro(SameDimensionCheck,
 										(Concept::SameDimension<
-										 ::itk::GetImageDimension<TInputImage>::ImageDimension, 
-										 ::itk::GetImageDimension<TOrientedFluxImage>::ImageDimension>));
+										 TInputImage::ImageDimension,
+										 TOrientedFluxImage::ImageDimension>));
 		itkConceptMacro(SameDimensionCheck2,
 										(Concept::SameDimension<
-										 ::itk::GetImageDimension<TInputImage>::ImageDimension, 
-										 ::itk::GetImageDimension<TScaleImage>::ImageDimension>));
+										 TInputImage::ImageDimension,
+										 TScaleImage::ImageDimension>));
 		itkConceptMacro(SameDimensionCheck3,
 										(Concept::SameDimension<
-										 ::itk::GetImageDimension<TInputImage>::ImageDimension, 
-										 ::itk::GetImageDimension<TOutputNDImage>::ImageDimension>));
+										 TInputImage::ImageDimension,
+										 TOutputNDImage::ImageDimension>));
 		itkConceptMacro(InputHasNumericTraitsCheck,
 										(Concept::HasNumericTraits<InputPixelType>));
 		itkConceptMacro(OrientedFluxMatrixHasPixelTraitsCheck,

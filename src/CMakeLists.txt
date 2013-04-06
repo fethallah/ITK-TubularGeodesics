@@ -23,6 +23,7 @@ INCLUDE(CTest)
 SET(Required_Packages
 ITK
 )
+SET(ITK_USE_FLAT_DIRECTORY_INSTALL ON)
 
 set(CMAKE_BUILD_TYPE release) #debug none release distribution
 

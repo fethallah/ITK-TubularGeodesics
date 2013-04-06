@@ -58,7 +58,7 @@ namespace itk
 		
 		/** Image dimension. */
 		itkStaticConstMacro(ImageDimension, unsigned int,
-												::itk::GetImageDimension<TInputImage>::ImageDimension);
+												TInputImage::ImageDimension);
 		
 		/** Type of the output Image */
 		typedef TOutputImage                                      OutputImageType;
