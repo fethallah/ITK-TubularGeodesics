@@ -15,36 +15,37 @@
 //**********************************************************
 
 
-#ifndef __itkOrientedFluxMatrixImageFilter_hxx
-#define __itkOrientedFluxMatrixImageFilter_hxx
+#ifndef __itkOrientedFluxMatrixImageFilter_txx
+#define __itkOrientedFluxMatrixImageFilter_txx
 
 #include "itkOrientedFluxMatrixImageFilter.h"
 #include "itkCastImageFilter.h"
 #include "itkExtractImageFilter.h"
-#include "itkMath.h"
+#include "itkGeometryUtilities.h"
 #include "vnl/vnl_bessel.h"
+#include "boost/math/tr1.hpp"
 
 namespace itk
 {
 	/**
 	 * Constructor
 	 */
-	template <typename TInputImage, typename TOutputImage >
-	OrientedFluxMatrixImageFilter<TInputImage, TOutputImage >
+	template <typename TInputImage, typename TOutputImage, typename TGradientImageType >
+	OrientedFluxMatrixImageFilter<TInputImage, TOutputImage, TGradientImageType >
 	::OrientedFluxMatrixImageFilter()
 	{
-		m_Sigma0								= 1.0;
-		m_Radius								= 1.0;
-		m_BoundaryCondition			= &m_DefaultBoundaryCondition;
-		m_ImageAdaptor					= OutputImageAdaptorType::New();
+		m_Sigma0				= 1.0;
+		m_Radius				= 1.0;
+		m_BoundaryCondition		= &m_DefaultBoundaryCondition;
+		m_ImageAdaptor			= OutputImageAdaptorType::New();
 	}
 	
 	/**
 	 * Set Sigma0
 	 */
-	template <typename TInputImage, typename TOutputImage >
+	template <typename TInputImage, typename TOutputImage, typename TGradientImageType >
 	void
-	OrientedFluxMatrixImageFilter<TInputImage, TOutputImage >
+	OrientedFluxMatrixImageFilter<TInputImage, TOutputImage, TGradientImageType >
 	::SetSigma0( RealType sigma0 )
 	{
 		if(m_Sigma0 != sigma0)
@@ -57,9 +58,9 @@ namespace itk
 	/**
 	 * Get Sigma0
 	 */
-	template <typename TInputImage, typename TOutputImage >
-	typename OrientedFluxMatrixImageFilter<TInputImage, TOutputImage >::RealType
-	OrientedFluxMatrixImageFilter<TInputImage, TOutputImage >
+	template <typename TInputImage, typename TOutputImage, typename TGradientImageType >
+	typename OrientedFluxMatrixImageFilter<TInputImage, TOutputImage, TGradientImageType >::RealType
+	OrientedFluxMatrixImageFilter<TInputImage, TOutputImage, TGradientImageType >
 	::GetSigma0( )
 	{
 		return	m_Sigma0;
@@ -68,9 +69,9 @@ namespace itk
 	/**
 	 * Set Radius
 	 */
-	template <typename TInputImage, typename TOutputImage >
+	template <typename TInputImage, typename TOutputImage, typename TGradientImageType >
 	void
-	OrientedFluxMatrixImageFilter<TInputImage, TOutputImage >
+	OrientedFluxMatrixImageFilter<TInputImage, TOutputImage, TGradientImageType >
 	::SetRadius( RealType radius )
 	{
 		if(m_Radius != radius)
@@ -83,14 +84,14 @@ namespace itk
 	/**
 	 * Get Radius
 	 */
-	template <typename TInputImage, typename TOutputImage >
-	typename OrientedFluxMatrixImageFilter<TInputImage, TOutputImage >::RealType
-	OrientedFluxMatrixImageFilter<TInputImage, TOutputImage >
+	template <typename TInputImage, typename TOutputImage, typename TGradientImageType >
+	typename OrientedFluxMatrixImageFilter<TInputImage, TOutputImage, TGradientImageType >::RealType
+	OrientedFluxMatrixImageFilter<TInputImage, TOutputImage, TGradientImageType >
 	::GetRadius( )
 	{
 		return m_Radius;
 	}
-		
+			
 	/***************************************************************************************
 	 *  For 2 given directions, Generates the oriented flux matix kernel in the fourier
 	 *  domain as Given by Eq.8 in:
@@ -100,9 +101,9 @@ namespace itk
 	 *
 	 * \author Fethallah Benmansour
 	 ***************************************************************************************/
-	template <typename TInputImage, typename TOutputImage >
+	template <typename TInputImage, typename TOutputImage, typename TGradientImageType >
 	void
-	OrientedFluxMatrixImageFilter<TInputImage, TOutputImage >
+	OrientedFluxMatrixImageFilter<TInputImage, TOutputImage, TGradientImageType >
 	::GenerateOrientedFluxMatrixElementKernel(InternalComplexImagePointerType &kernel,
 																					InternalComplexImagePointerType &input, 
 																					unsigned int derivA, unsigned int derivB, 
@@ -191,6 +192,19 @@ namespace itk
 		double eps = itk::NumericTraits<float>::epsilon();	
 		double Ui = 0.0, Uj = 0.0;
 		double normU;
+        
+        double multiplicativeFactor = 0;
+        unsigned int p;
+        if(ImageDimension%2 == 0)
+        {
+            p = ImageDimension / 2;
+            multiplicativeFactor = radius * vcl_pow(2.0, double(p-1)) * GeometryUtilities::Factorial(p-1);
+        }
+        else
+        {
+            p = floor(ImageDimension / 2);
+            multiplicativeFactor = radius * GeometryUtilities::Factorial(2*p) / (GeometryUtilities::Factorial(p)*vcl_pow(2.0, double(p))) ;
+        }
 		
 		typedef itk::ImageRegionIterator< InternalComplexImageType > ImageIterator;
 		ImageIterator  it( kernel, kernel->GetLargestPossibleRegion() );
@@ -220,22 +234,18 @@ namespace itk
 				double phase								= 2.0 * vnl_math::pi * radius * normU;
 				double piNormUSigma					= (vnl_math::pi * normU * sigma0);
 				InternalComplexType derivativesTerm(0.0, 0.0);
-				// second order derivatives.
-				derivativesTerm = InternalComplexType(-exp( -2.0* piNormUSigma * piNormUSigma )* Ui * Uj, 0.0);
+					// second order derivatives.
+				derivativesTerm = InternalComplexType(- (2.0*vnl_math::pi*Ui) * (2.0*vnl_math::pi*Uj)
+                                                          * exp( -2.0* piNormUSigma * piNormUSigma ), 0.0);
 
 				InternalComplexType kernelTerm(0.0, 0.0);
 				if(ImageDimension%2 == 0)
 				{// scale normalized response
-					unsigned int p = ImageDimension / 2; 
-					kernelTerm  = InternalComplexType(vnl_bessel(p, phase) / (vcl_pow(double(normU), double(p)) * vcl_pow(double(radius), double(p-1))), 0.0);
-				}
-				else if(ImageDimension == 3)
-				{// scale normalized response
-					kernelTerm  = InternalComplexType(( sin(phase)/phase - cos(phase) ) / (radius * normU*normU), 0.0);
+					kernelTerm  = InternalComplexType( multiplicativeFactor * vnl_bessel(p, phase) / vcl_pow(phase, double(p)), 0.0);
 				}
 				else
-				{
-					itkGenericExceptionMacro("Oriented Flux filter in the Fourier imlemented only for dimensions 2 and 3 and 4, and all even dimensions");
+				{// scale normalized response
+					kernelTerm  = InternalComplexType( multiplicativeFactor * boost::math::tr1::sph_bessel(p, phase) / vcl_pow(phase, double(p)), 0.0);
 				}
 				value = kernelTerm * derivativesTerm;
 			}
@@ -250,86 +260,86 @@ namespace itk
 	 *
 	 * \author: F. Benmansour
 	 */
-	template <typename TInputImage, typename TOutputImage >
+	template <typename TInputImage, typename TOutputImage, typename TGradientImageType >
 	void
-	OrientedFluxMatrixImageFilter<TInputImage, TOutputImage >
+	OrientedFluxMatrixImageFilter<TInputImage, TOutputImage, TGradientImageType >
 	::GenerateData( )
 	{
-		InputImageConstPointer inputImage  = this->GetInput();
-		OutputImagePointer		 output = this->GetOutput();		
-		if( inputImage.IsNull() )
-		{
-			itkExceptionMacro("Input image must be provided");
-		}
-		typedef CastImageFilter< InputImageType, InternalImageType > InputCastFilterType;
-		typename InputCastFilterType::Pointer inputCaster = InputCastFilterType::New();
-		inputCaster->SetNumberOfThreads( this->GetNumberOfThreads() );
-		inputCaster->SetInput( inputImage );
-		inputCaster->ReleaseDataFlagOn();
-		inputCaster->Update();
-		
-		typename InternalImageType::Pointer localInput = InternalImageType::New();
-		localInput->Graft( inputCaster->GetOutput() );
-		localInput->Update();
-		
-		InternalComplexImagePointerType inputFourierTransform = NULL;
-		InternalComplexImagePointerType kernel = NULL;
-		
-		PrepareInput( localInput, inputFourierTransform );
-		
-		//The original spacing is needed for generating properly the kernels
-		SpacingType originalSpacing = inputImage->GetSpacing();
-		// Prepare Image adaptor
-		m_ImageAdaptor->SetImage( this->GetOutput() );
-		m_ImageAdaptor->SetLargestPossibleRegion( this->GetInput()->GetLargestPossibleRegion() );
-		m_ImageAdaptor->SetBufferedRegion( this->GetInput()->GetBufferedRegion() );
-		m_ImageAdaptor->SetRequestedRegion( this->GetInput()->GetRequestedRegion() );
-		m_ImageAdaptor->Allocate();
-		unsigned int element = 0;
-		for(unsigned int i = 0; i < ImageDimension; i++)
-		{
-			for(unsigned int j = i; j < ImageDimension; j++)
-			{
-				InternalComplexImagePointerType kernel = NULL;
-				// the spacing needs to be reset to the spacing of the input image for 2 reasons.
-				// First, it's needed to generate properly the kernel(s).
-				// Second, the spacing of inputFourierTransform is modified in GenerateOrientedFluxMatrixElementKernel.
-				// this is done because the multiply image filter require that the 2 input images occupy 
-				// the exact same physical domain.
-				inputFourierTransform->SetSpacing( originalSpacing );
-				GenerateOrientedFluxMatrixElementKernel( kernel, inputFourierTransform, i, j, this->GetRadius(), this->GetSigma0() );
-				typedef itk::MultiplyImageFilter< InternalComplexImageType,
-				InternalComplexImageType,
-				InternalComplexImageType > MultType;
-				typename MultType::Pointer multiplyFilter = MultType::New();
-				multiplyFilter->SetInput1( inputFourierTransform );
-				multiplyFilter->SetInput2( kernel );
-				multiplyFilter->SetNumberOfThreads( this->GetNumberOfThreads() );
-				multiplyFilter->SetReleaseDataFlag( true );
-				multiplyFilter->SetInPlace( false );
-				multiplyFilter->Update();
-				// Free up the memory for the prepared kernel
-				kernel = NULL;
-				InternalImagePointerType croppedOutput = NULL;
-				this->ProduceOutput( multiplyFilter->GetOutput(), croppedOutput );
-				ImageRegionIteratorWithIndex< InternalImageType > it(croppedOutput, croppedOutput->GetRequestedRegion());
-				m_ImageAdaptor->SelectNthElement( element++ );
-				ImageRegionIteratorWithIndex< OutputImageAdaptorType > ot( m_ImageAdaptor, m_ImageAdaptor->GetRequestedRegion());
-				it.GoToBegin();
-				ot.GoToBegin();
-				while( !it.IsAtEnd() )
-				{
-					ot.Set( it.Get() );
-					++it;
-					++ot;
-				}
-			}
-		}
+        InputImageConstPointer inputImage  = this->GetInput();
+        OutputImagePointer		 output = this->GetOutput();		
+        if( inputImage.IsNull() )
+        {
+            itkExceptionMacro("Input image must be provided");
+        }
+        typedef CastImageFilter< InputImageType, InternalImageType > InputCastFilterType;
+        typename InputCastFilterType::Pointer inputCaster = InputCastFilterType::New();
+        inputCaster->SetNumberOfThreads( this->GetNumberOfThreads() );
+        inputCaster->SetInput( inputImage );
+        inputCaster->ReleaseDataFlagOn();
+        inputCaster->Update();
+        
+        typename InternalImageType::Pointer localInput = InternalImageType::New();
+        localInput->Graft( inputCaster->GetOutput() );
+        localInput->Update();
+        
+        InternalComplexImagePointerType inputFourierTransform = NULL;
+        InternalComplexImagePointerType kernel = NULL;
+        
+        PrepareInput( localInput, inputFourierTransform );
+        
+        //The original spacing is needed for generating properly the kernels
+        SpacingType originalSpacing = inputImage->GetSpacing();
+        // Prepare Image adaptor
+        m_ImageAdaptor->SetImage( this->GetOutput() );
+        m_ImageAdaptor->SetLargestPossibleRegion( this->GetInput()->GetLargestPossibleRegion() );
+        m_ImageAdaptor->SetBufferedRegion( this->GetInput()->GetBufferedRegion() );
+        m_ImageAdaptor->SetRequestedRegion( this->GetInput()->GetRequestedRegion() );
+        m_ImageAdaptor->Allocate();
+        unsigned int element = 0;
+        for(unsigned int i = 0; i < ImageDimension; i++)
+        {
+            for(unsigned int j = i; j < ImageDimension; j++)
+            {
+                InternalComplexImagePointerType kernel = NULL;
+                // the spacing needs to be reset to the spacing of the input image for 2 reasons.
+                // First, it's needed to generate properly the kernel(s).
+                // Second, the spacing of inputFourierTransform is modified in GenerateOrientedFluxMatrixElementKernel.
+                // this is done because the multiply image filter require that the 2 input images occupy 
+                // the exact same physical domain.
+                inputFourierTransform->SetSpacing( originalSpacing );
+                GenerateOrientedFluxMatrixElementKernel( kernel, inputFourierTransform, i, j, this->GetRadius(), this->GetSigma0() );
+                typedef itk::MultiplyImageFilter< InternalComplexImageType,
+                InternalComplexImageType,
+                InternalComplexImageType > MultType;
+                typename MultType::Pointer multiplyFilter = MultType::New();
+                multiplyFilter->SetInput1( inputFourierTransform );
+                multiplyFilter->SetInput2( kernel );
+                multiplyFilter->SetNumberOfThreads( this->GetNumberOfThreads() );
+                multiplyFilter->SetReleaseDataFlag( true );
+                multiplyFilter->SetInPlace( false );
+                multiplyFilter->Update();
+                // Free up the memory for the prepared kernel
+                kernel = NULL;
+                InternalImagePointerType croppedOutput = NULL;
+                this->ProduceOutput( multiplyFilter->GetOutput(), croppedOutput );
+                ImageRegionIteratorWithIndex< InternalImageType > it(croppedOutput, croppedOutput->GetRequestedRegion());
+                m_ImageAdaptor->SelectNthElement( element++ );
+                ImageRegionIteratorWithIndex< OutputImageAdaptorType > ot( m_ImageAdaptor, m_ImageAdaptor->GetRequestedRegion());
+                it.GoToBegin();
+                ot.GoToBegin();
+                while( !it.IsAtEnd() )
+                {
+                    ot.Set( it.Get() );
+                    ++it;
+                    ++ot;
+                }
+            }
+        }
 	}
 	
-	template <typename TInputImage, typename TOutputImage >
+	template <typename TInputImage, typename TOutputImage, typename TGradientImageType >
 	void
-	OrientedFluxMatrixImageFilter<TInputImage, TOutputImage >
+	OrientedFluxMatrixImageFilter<TInputImage, TOutputImage, TGradientImageType >
 	::PrepareInput(const InternalImageType * input,
 								 InternalComplexImagePointerType & preparedInput)
 	{
@@ -338,9 +348,9 @@ namespace itk
 		this->TransformPaddedInput( paddedInput, preparedInput );
 	}
 	
-	template <typename TInputImage, typename TOutputImage >
+	template <typename TInputImage, typename TOutputImage, typename TGradientImageType >
 	void
-	OrientedFluxMatrixImageFilter<TInputImage, TOutputImage >
+	OrientedFluxMatrixImageFilter<TInputImage, TOutputImage, TGradientImageType >
 	::TransformPaddedInput(const InternalImageType * paddedInput,
 												 InternalComplexImagePointerType & transformedInput)
 	{
@@ -353,9 +363,9 @@ namespace itk
 		transformedInput = imageFFTFilter->GetOutput();
 	}
 	
-	template <typename TInputImage, typename TOutputImage >
+	template <typename TInputImage, typename TOutputImage, typename TGradientImageType >
 	void
-	OrientedFluxMatrixImageFilter<TInputImage, TOutputImage >
+	OrientedFluxMatrixImageFilter<TInputImage, TOutputImage, TGradientImageType >
 	::PadInput(const InternalImageType * input,
 						 InternalImagePointerType & paddedInput)
 	{
@@ -389,9 +399,9 @@ namespace itk
 		paddedInput = inputPadder->GetOutput();
 	}
 	
-	template <typename TInputImage, typename TOutputImage >
-	typename OrientedFluxMatrixImageFilter<TInputImage, TOutputImage >::InputSizeType
-	OrientedFluxMatrixImageFilter<TInputImage, TOutputImage >
+	template <typename TInputImage, typename TOutputImage, typename TGradientImageType >
+	typename OrientedFluxMatrixImageFilter<TInputImage, TOutputImage, TGradientImageType >::InputSizeType
+	OrientedFluxMatrixImageFilter<TInputImage, TOutputImage, TGradientImageType >
 	::GetPadLowerBound() const
 	{
 		typename InputImageType::ConstPointer inputImage = this->GetInput();
@@ -406,16 +416,16 @@ namespace itk
 		return inputLowerBound;
 	}
 	
-	template <typename TInputImage, typename TOutputImage >
-	typename OrientedFluxMatrixImageFilter<TInputImage, TOutputImage >::InputSizeType
-	OrientedFluxMatrixImageFilter<TInputImage, TOutputImage >
+	template <typename TInputImage, typename TOutputImage, typename TGradientImageType >
+	typename OrientedFluxMatrixImageFilter<TInputImage, TOutputImage, TGradientImageType >::InputSizeType
+	OrientedFluxMatrixImageFilter<TInputImage, TOutputImage, TGradientImageType >
 	::GetPadSize() const
 	{
 		typename InputImageType::ConstPointer inputImage = this->GetInput();
 		InputSizeType inputSize = inputImage->GetLargestPossibleRegion().GetSize();
 		//RealType radius   = this->GetRadius();
 		double minSpacing = inputImage->GetSpacing().GetVnlVector().min_value();
-		unsigned int halfWindowSize = itk::Math::Round<unsigned int>(m_Radius/minSpacing) + 1;
+		unsigned int halfWindowSize = round(m_Radius/minSpacing) + 1;
 		InputSizeType kernelSize;
 		kernelSize.Fill( 2*halfWindowSize + 1 );
 		InputSizeType padSize;
@@ -432,18 +442,18 @@ namespace itk
 		return padSize;
 	}
 	
-	template <typename TInputImage, typename TOutputImage >
+	template <typename TInputImage, typename TOutputImage, typename TGradientImageType >
 	bool
-	OrientedFluxMatrixImageFilter<TInputImage, TOutputImage >
+	OrientedFluxMatrixImageFilter<TInputImage, TOutputImage, TGradientImageType >
 	::GetXDimensionIsOdd() const
 	{
 		InputSizeType padSize = this->GetPadSize();
 		return (padSize[0] % 2 != 0);
 	}
 	
-	template <typename TInputImage, typename TOutputImage >
+	template <typename TInputImage, typename TOutputImage, typename TGradientImageType >
 	void
-	OrientedFluxMatrixImageFilter<TInputImage, TOutputImage >
+	OrientedFluxMatrixImageFilter<TInputImage, TOutputImage, TGradientImageType >
 	::ProduceOutput(InternalComplexImageType * paddedOutput, InternalImagePointerType & internalOutput)
 	{
 		typename IFFTFilterType::Pointer ifftFilter = IFFTFilterType::New();
@@ -455,9 +465,9 @@ namespace itk
 		this->CropOutput( ifftFilter->GetOutput(), internalOutput );
 	}
 	
-	template <typename TInputImage, typename TOutputImage >
+	template <typename TInputImage, typename TOutputImage, typename TGradientImageType >
 	void
-	OrientedFluxMatrixImageFilter<TInputImage, TOutputImage >
+	OrientedFluxMatrixImageFilter<TInputImage, TOutputImage, TGradientImageType >
 	::CropOutput(InternalImageType * paddedOutput, InternalImagePointerType & croppedOutput)
 	{
 		//Initialize the cropped image
@@ -483,9 +493,9 @@ namespace itk
 		extractFilter->Update();
 	}
 	
-	template <typename TInputImage, typename TOutputImage >
+	template <typename TInputImage, typename TOutputImage, typename TGradientImageType >
 	void
-	OrientedFluxMatrixImageFilter<TInputImage, TOutputImage >
+	OrientedFluxMatrixImageFilter<TInputImage, TOutputImage, TGradientImageType >
 	::PrintSelf(std::ostream& os, Indent indent) const
 	{
 		Superclass::PrintSelf(os,indent);

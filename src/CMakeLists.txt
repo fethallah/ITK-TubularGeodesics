@@ -20,10 +20,16 @@ INCLUDE(CTest)
 # 
 # If no version is specified, the most recent release of the package
 # will be used.
-SET(Required_Packages
-ITK
-)
-SET(ITK_USE_FLAT_DIRECTORY_INSTALL ON)
+find_package(ITK 4.1 REQUIRED)
+if(ITK_FOUND)
+  include(${ITK_USE_FILE})
+endif()
+
+find_package(Boost REQUIRED)
+if(Boost_FOUND)
+  include_directories(${Boost_INCLUDE_DIR})
+  link_directories(${Boost_LIBRARY_DIRS})
+endif()
 
 set(CMAKE_BUILD_TYPE release) #debug none release distribution
 
@@ -51,7 +57,7 @@ TARGET_LINK_LIBRARIES(itkTubularMetricToPathFilter ${Libraries})
 
 SET(CurrentExe "itkMultiScaleTubularityMeasureImageFilter")
 ADD_EXECUTABLE(itkMultiScaleTubularityMeasureImageFilter itkMultiScaleTubularityMeasureImageFilter.cxx)
-TARGET_LINK_LIBRARIES(itkMultiScaleTubularityMeasureImageFilter ${Libraries})
+TARGET_LINK_LIBRARIES(itkMultiScaleTubularityMeasureImageFilter ${Libraries} boost_math_tr1)
 
 ########################################## testing ##########################################
 ####### Synthetic-02 #######
